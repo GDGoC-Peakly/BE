@@ -1,0 +1,22 @@
+name: "Refactor Template"
+description: "리팩토링 작업을 위한 이슈 템플릿"
+title: "[REFACTOR]: "
+labels: ["refactor"]
+
+body:
+  - type: textarea
+    id: refactor-reason
+    attributes:
+      label: "🔍 리팩토링 사유"
+      description: "기존 코드에서 리팩토링이 필요한 이유를 적어주세요."
+      placeholder: "ex. 중복 코드 제거, 가독성 개선, 성능 최적화 등"
+    validations:
+      required: true
+
+  - type: textarea
+    id: refactor-details
+    attributes:
+      label: "📄 리팩토링 상세 내용"
+      description: "어떤 방식으로 개선할 예정인지 구체적으로 설명해주세요."
+    validations:
+      required: true
