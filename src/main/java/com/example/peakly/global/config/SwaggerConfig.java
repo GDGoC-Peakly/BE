@@ -1,5 +1,11 @@
 package com.example.peakly.global.config;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,13 +20,12 @@ public class SwaggerConfig {
 
         return new OpenAPI()
                 .info(new Info()
-                        .title("Eatsfine API 명세서")
-                        .description("Eatsfine 프로젝트의 Swagger 문서입니다.")
+                        .title("Peakly API 명세서")
+                        .description("Peakly 프로젝트의 Swagger 문서입니다.")
                         .version("1.0.0"))
-
                 .servers(List.of(
-                        new Server().url("http://localhost:8080").description("Local")))
-
+                        new Server().url("http://localhost:8080").description("Local")
+                ))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
                         .addSecuritySchemes(securitySchemeName,
@@ -29,6 +34,6 @@ public class SwaggerConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .in(SecurityScheme.In.HEADER)));
+                        ));
     }
 }
