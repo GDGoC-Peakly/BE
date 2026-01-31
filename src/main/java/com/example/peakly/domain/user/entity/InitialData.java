@@ -26,6 +26,10 @@ public class InitialData extends BaseEntity {
     @Column(name = "chronotype", nullable = false, length = 20)
     private Chronotype chronotype;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subjective_peaktime", nullable = false, length = 20)
+    private SubjectivePeaktime subjectivePeaktime;
+
     @Column(name = "caffeine_responsiveness", nullable = false)
     private byte caffeineResponsiveness; // 0~2
 
@@ -36,6 +40,10 @@ public class InitialData extends BaseEntity {
         if (user == null) throw new IllegalArgumentException("user는 필수입니다.");
         if (cmd == null) throw new IllegalArgumentException("cmd는 필수입니다.");
         if (cmd.chronotype() == null) throw new IllegalArgumentException("chronotype은 필수입니다.");
+
+        if (cmd.subjectivePeaktime() == null) {
+            throw new IllegalArgumentException("subjectivePeaktime은 필수입니다.");
+        }
 
         if (cmd.caffeineResponsiveness() < 0 || cmd.caffeineResponsiveness() > 2) {
             throw new IllegalArgumentException("caffeineResponsiveness는 0~2 범위여야 합니다.");
@@ -48,6 +56,7 @@ public class InitialData extends BaseEntity {
         d.user = user;
         d.userId = user.getId();
         d.chronotype = cmd.chronotype();
+        d.subjectivePeaktime = cmd.subjectivePeaktime();
         d.caffeineResponsiveness = (byte) cmd.caffeineResponsiveness();
         d.noiseSensitivity = (byte) cmd.noiseSensitivity();
         return d;

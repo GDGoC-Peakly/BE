@@ -38,7 +38,7 @@ public class User extends BaseEntity {
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "job", nullable = false, length = 30)
+    @Column(name = "job", length = 30)
     private Job job;
 
     @Enumerated(EnumType.STRING)
@@ -86,7 +86,11 @@ public class User extends BaseEntity {
         this.userStatus = userStatus;
     }
 
-    public static User createEmailUser(String email, String passwordHash, String nickname, Job job) {
-        return new User(email, passwordHash, nickname, job, AuthProvider.EMAIL, null, UserStatus.ACTIVE);
+    public static User createEmailUser(String email, String passwordHash, String nickname) {
+        return new User(email, passwordHash, nickname, null, AuthProvider.EMAIL, null, UserStatus.ACTIVE);
+    }
+
+    public void updateJob(Job job) {
+        this.job = job;
     }
 }
