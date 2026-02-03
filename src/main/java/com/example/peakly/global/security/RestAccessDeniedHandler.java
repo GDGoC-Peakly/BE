@@ -1,7 +1,7 @@
 package com.example.peakly.global.security;
 
 import com.example.peakly.global.apiPayload.code.status.ErrorStatus;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 @RequiredArgsConstructor
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper om;
 
     @Override
     public void handle(
@@ -32,7 +32,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
                 null
         );
 
-        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.getWriter().write(om.writeValueAsString(body));
     }
 
     private record ErrorResponse(

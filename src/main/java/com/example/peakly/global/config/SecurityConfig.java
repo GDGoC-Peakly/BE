@@ -4,7 +4,7 @@ import com.example.peakly.domain.auth.jwt.JwtTokenProvider;
 import com.example.peakly.global.security.JwtAuthenticationFilter;
 import com.example.peakly.global.security.RestAccessDeniedHandler;
 import com.example.peakly.global.security.RestAuthenticationEntryPoint;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,12 +57,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RestAuthenticationEntryPoint restAuthenticationEntryPoint(ObjectMapper objectMapper) {
-        return new RestAuthenticationEntryPoint(objectMapper);
+    public RestAuthenticationEntryPoint restAuthenticationEntryPoint(ObjectMapper om) {
+        return new RestAuthenticationEntryPoint(om);
     }
 
     @Bean
-    public RestAccessDeniedHandler restAccessDeniedHandler(ObjectMapper objectMapper) {
-        return new RestAccessDeniedHandler(objectMapper);
+    public RestAccessDeniedHandler restAccessDeniedHandler(ObjectMapper om) {
+        return new RestAccessDeniedHandler(om);
     }
 }
