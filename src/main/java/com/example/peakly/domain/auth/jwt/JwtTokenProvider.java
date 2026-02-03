@@ -1,7 +1,6 @@
 package com.example.peakly.domain.auth.jwt;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
@@ -11,11 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
+
 @Slf4j
 @Component
 public class JwtTokenProvider {
 
-    private final Key key;
+    private final SecretKey key;
     private final long accessExpSeconds;
     private final long refreshExpSeconds;
     private final String issuer;
@@ -26,7 +27,7 @@ public class JwtTokenProvider {
             @Value("${jwt.refresh-token-exp-seconds}") long refreshExpSeconds,
             @Value("${jwt.issuer:peakly}") String issuer
     ) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.key = KeysCompat.hmacShaKey(secret);
         this.accessExpSeconds = accessExpSeconds;
         this.refreshExpSeconds = refreshExpSeconds;
         this.issuer = issuer;
@@ -45,17 +46,17 @@ public class JwtTokenProvider {
         Instant exp = now.plusSeconds(expSeconds);
 
         return Jwts.builder()
-                .setIssuer(issuer)
-                .setSubject(String.valueOf(userId))
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
+                .issuer(issuer)
+                .subject(String.valueOf(userId))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
                 .claim("typ", typ)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .signWith(key)
                 .compact();
     }
 
     public Long parseAccessTokenAndGetUserId(String token) {
-        Claims claims = parse(token);
+        Claims claims = parseClaims(token);
 
         Object typ = claims.get("typ");
         if (typ == null || !"ACCESS".equals(String.valueOf(typ))) {
@@ -79,12 +80,21 @@ public class JwtTokenProvider {
         }
     }
 
-    private Claims parse(String token) {
-        return Jwts.parserBuilder()
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
                 .requireIssuer(issuer)
-                .setSigningKey(key)
+                .verifyWith(key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    private static final class KeysCompat {
+        private KeysCompat() {}
+
+        static SecretKey hmacShaKey(String secret) {
+            byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+            return io.jsonwebtoken.security.Keys.hmacShaKeyFor(bytes);
+        }
     }
 }
