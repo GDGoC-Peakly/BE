@@ -11,6 +11,8 @@ public record InitialSettingRequest(
         @NotNull Job job,
         @NotNull Chronotype chronotype,
         @NotNull SubjectivePeaktime subjectivePeaktime,
-        @Min(0) @Max(2) int caffeineResponsiveness,
-        @Min(0) @Max(2) int noiseSensitivity
+        @NotNull (message = "카페인 반응도 값이 필요합니다.")
+        @Min(0) @Max(2) Integer caffeineResponsiveness,
+        @NotNull (message = "소음 민감도 값이 필요합니다.")
+        @Min(0) @Max(2) Integer noiseSensitivity
 ) {}

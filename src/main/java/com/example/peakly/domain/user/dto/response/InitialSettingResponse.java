@@ -4,6 +4,8 @@ import com.example.peakly.domain.user.entity.Chronotype;
 import com.example.peakly.domain.user.entity.Job;
 import com.example.peakly.domain.user.entity.SubjectivePeaktime;
 
+import java.time.OffsetDateTime;
+
 public record InitialSettingResponse(
         Long userId,
         Job job,
@@ -11,5 +13,5 @@ public record InitialSettingResponse(
         SubjectivePeaktime subjectivePeaktime,
         int caffeineResponsiveness,
         int noiseSensitivity,
-        String recordedAt
+        OffsetDateTime recordedAt
 ) {}
