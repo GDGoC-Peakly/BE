@@ -92,7 +92,14 @@ public class JwtTokenProvider {
         private KeysCompat() {}
 
         static SecretKey hmacShaKey(String secret) {
+            if (secret == null || secret.isBlank()) {
+                throw new IllegalArgumentException("jwt.secret이 존재해야 합니다.");
+            }
+
             byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+            if (bytes.length < 32) {
+                throw new IllegalArgumentException("jwt.secret은 32 바이트 이상의 값이어야 합니다.");
+            }
             return io.jsonwebtoken.security.Keys.hmacShaKeyFor(bytes);
         }
     }

@@ -9,7 +9,7 @@ public record SignupRequest(
         String email,
 
         @NotBlank(message = "비밀번호를 입력해주세요.")
-        @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
+        @Size(min = 8, max = 72, message = "비밀번호는 최소 8자 이상이어야 합니다.")
         @Pattern(
                 regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
                 message = "비밀번호는 영문자와 숫자를 모두 포함해야 합니다."

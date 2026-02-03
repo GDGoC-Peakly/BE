@@ -9,6 +9,7 @@ import com.example.peakly.domain.user.repository.InitialDataRepository;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
+import jakarta.validation.Valid;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public InitialSettingResponse saveInitialSetting(Long userId, @NotNull InitialSettingRequest req) {
+    public InitialSettingResponse saveInitialSetting(
+            Long userId,
+            @Valid @NotNull InitialSettingRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
 
