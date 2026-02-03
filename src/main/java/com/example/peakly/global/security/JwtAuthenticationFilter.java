@@ -11,10 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -25,24 +28,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String token = resolveBearerToken(authHeader);
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring("Bearer ".length()).trim();
+        if (token == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            if (!token.isEmpty() && jwtTokenProvider.isValidAccessToken(token)) {
-                Long userId = jwtTokenProvider.parseAccessTokenAndGetUserId(token);
+        try {
+            Long userId = jwtTokenProvider.parseAccessTokenAndGetUserId(token);
 
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        userId,
-                        null,
-                        Collections.emptyList()
-                );
+            var authentication = new UsernamePasswordAuthenticationToken(
+                    userId,
+                    null,
+                    Collections.emptyList()
+            );
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String resolveBearerToken(String authHeader) {
+        if (!StringUtils.hasText(authHeader)) return null;
+        if (!authHeader.startsWith(BEARER_PREFIX)) return null;
+
+        String token = authHeader.substring(BEARER_PREFIX.length()).trim();
+        return StringUtils.hasText(token) ? token : null;
     }
 }

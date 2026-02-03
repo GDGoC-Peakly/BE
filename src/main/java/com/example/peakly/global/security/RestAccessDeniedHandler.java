@@ -1,14 +1,19 @@
 package com.example.peakly.global.security;
 
 import com.example.peakly.global.apiPayload.code.status.ErrorStatus;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
+@RequiredArgsConstructor
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
+
+    private final ObjectMapper objectMapper;
 
     @Override
     public void handle(
@@ -20,13 +25,20 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        String body = """
-                {"isSuccess":false,"code":"%s","message":"%s","result":null}
-                """.formatted(
+        ErrorResponse body = new ErrorResponse(
+                false,
                 ErrorStatus._FORBIDDEN.getCode(),
-                ErrorStatus._FORBIDDEN.getMessage()
+                ErrorStatus._FORBIDDEN.getMessage(),
+                null
         );
 
-        response.getWriter().write(body);
+        response.getWriter().write(objectMapper.writeValueAsString(body));
     }
+
+    private record ErrorResponse(
+            boolean isSuccess,
+            String code,
+            String message,
+            Object result
+    ) {}
 }

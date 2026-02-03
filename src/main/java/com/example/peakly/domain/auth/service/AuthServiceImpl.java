@@ -44,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
         String passwordHash = passwordEncoder.encode(req.password());
 
         // 이메일 회원가입: provider=EMAIL, userStatus=ACTIVE
-        User user = User.createEmailUser(req.email(), passwordHash, req.nickname(), req.job());
+        User user = User.createEmailUser(req.email(), passwordHash, req.nickname());
 
         // (선택) 소셜 가입/탈퇴 유저 재가입 정책이 있으면 여기서 분기 필요
         // 현재는 단순 신규 생성 정책

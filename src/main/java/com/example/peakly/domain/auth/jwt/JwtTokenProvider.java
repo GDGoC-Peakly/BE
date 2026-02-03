@@ -6,9 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
@@ -71,6 +74,7 @@ public class JwtTokenProvider {
             parseAccessTokenAndGetUserId(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Invalid access token: {}", e.getMessage());
             return false;
         }
     }
