@@ -9,7 +9,7 @@ import com.example.peakly.domain.user.repository.InitialDataRepository;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,6 +22,8 @@ import java.time.ZoneId;
 @Validated
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
 
     private final UserRepository userRepository;
     private final InitialDataRepository initialDataRepository;
@@ -62,7 +64,7 @@ public class UserServiceImpl implements UserService {
                 req.subjectivePeaktime(),
                 req.caffeineResponsiveness(),
                 req.noiseSensitivity(),
-                saved.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")).toOffsetDateTime()
+                saved.getCreatedAt().atZone(DEFAULT_ZONE).toOffsetDateTime()
         );
     }
 }

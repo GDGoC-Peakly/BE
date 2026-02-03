@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @EnableJpaAuditing
 @ConfigurationPropertiesScan
-@SpringBootApplication(scanBasePackages = {"com.example.peakly"})
+@SpringBootApplication
 public class PeaklyApplication {
 
     public static void main(String[] args) {

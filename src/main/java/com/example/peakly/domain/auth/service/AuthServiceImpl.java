@@ -59,20 +59,18 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new GeneralException(ErrorStatus._UNAUTHORIZED)); // AUTH_401_001 권장
+                .orElseThrow(() -> new GeneralException(AuthErrorStatus.AUTH_401_001));
 
-        // 이메일 로그인 API인데 provider가 EMAIL이 아닌 계정이 들어오면 정책이 필요합니다.
-        // 지금 요구사항에 없으니 "로그인 실패"로 통일(실무에서도 흔함).
         if (user.getProvider() != AuthProvider.EMAIL) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+            throw new GeneralException(AuthErrorStatus.AUTH_401_001);
         }
 
         if (user.getUserStatus() != UserStatus.ACTIVE) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN); // AUTH_403_001 권장
+            throw new GeneralException(AuthErrorStatus.AUTH_403_001);
         }
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+            throw new GeneralException(AuthErrorStatus.AUTH_401_001);
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());

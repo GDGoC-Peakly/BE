@@ -18,8 +18,5 @@ public record SignupRequest(
 
         @NotBlank(message = "닉네임을 입력해주세요.")
         @Size(max = 50, message = "닉네임은 50자 이하여야 합니다.")
-        String nickname,
-
-        @NotNull(message = "직업 값이 필요합니다.")
-        Job job
+        String nickname
 ) {}
