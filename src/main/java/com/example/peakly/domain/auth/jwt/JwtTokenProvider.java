@@ -78,7 +78,7 @@ public class JwtTokenProvider {
         try {
             parseAccessTokenAndGetUserId(token);
             return true;
-        } catch (JwtException e) {
+        } catch (IllegalArgumentException | JwtException e) {
             log.debug("Invalid access token: {}", e.getMessage());
             return false;
         }
