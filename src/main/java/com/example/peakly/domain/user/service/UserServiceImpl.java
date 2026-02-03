@@ -14,10 +14,12 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.ZoneId;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
