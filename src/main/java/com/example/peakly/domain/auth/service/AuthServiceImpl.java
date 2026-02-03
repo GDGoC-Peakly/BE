@@ -15,13 +15,18 @@ import com.example.peakly.global.apiPayload.code.status.AuthErrorStatus;
 import com.example.peakly.global.apiPayload.code.status.ErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneId;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -49,8 +54,17 @@ public class AuthServiceImpl implements AuthService {
         // 현재는 단순 신규 생성 정책
 
         User saved = userRepository.save(user);
+        try {
+            saved = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new GeneralException(AuthErrorStatus.AUTH_409_001);
+        }
 
-        return new SignupResponse(saved.getId(), saved.getCreatedAt());
+        return new SignupResponse(
+                saved.getId(),
+                saved.getCreatedAt()
+                        .atZone(DEFAULT_ZONE)
+                        .toOffsetDateTime());
     }
 
     @Override

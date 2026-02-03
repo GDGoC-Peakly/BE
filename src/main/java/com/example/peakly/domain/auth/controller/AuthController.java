@@ -10,6 +10,7 @@ import com.example.peakly.domain.auth.service.AuthService;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,6 +26,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<SignupResponse> signup(@Valid @RequestBody SignupRequest req) {
         return ApiResponse.onSuccess(authService.signup(req));
     }

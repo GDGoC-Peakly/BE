@@ -91,6 +91,9 @@ public class User extends BaseEntity {
     }
 
     public void updateJob(Job job) {
+        if (job == null) {
+            throw new IllegalArgumentException("job은 필수입니다.");
+        }
         this.job = job;
     }
 }

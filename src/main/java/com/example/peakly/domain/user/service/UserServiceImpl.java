@@ -62,11 +62,11 @@ public class UserServiceImpl implements UserService {
 
         return new InitialSettingResponse(
                 userId,
-                req.job(),
-                req.chronotype(),
-                req.subjectivePeaktime(),
-                req.caffeineResponsiveness(),
-                req.noiseSensitivity(),
+                user.getJob(),
+                saved.getChronotype(),
+                saved.getSubjectivePeaktime(),
+                saved.getCaffeineResponsiveness(),
+                saved.getNoiseSensitivity(),
                 saved.getCreatedAt().atZone(DEFAULT_ZONE).toOffsetDateTime()
         );
     }

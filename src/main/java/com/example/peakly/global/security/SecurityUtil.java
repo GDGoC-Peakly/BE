@@ -3,6 +3,7 @@ package com.example.peakly.global.security;
 
 import com.example.peakly.global.apiPayload.code.status.ErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -13,7 +14,7 @@ public final class SecurityUtil {
     public static Long currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth == null || !auth.isAuthenticated()) {
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return null;
         }
 

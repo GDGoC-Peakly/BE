@@ -1,8 +1,8 @@
 package com.example.peakly.domain.auth.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record SignupResponse(
         Long id,
-        LocalDateTime createdAt
+        OffsetDateTime createdAt
 ) {}
