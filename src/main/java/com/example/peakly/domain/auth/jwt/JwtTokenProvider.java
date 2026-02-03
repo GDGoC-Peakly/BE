@@ -66,14 +66,19 @@ public class JwtTokenProvider {
         if (sub == null || sub.isBlank()) {
             throw new JwtException("Missing subject");
         }
-        return Long.parseLong(sub);
+
+        try {
+            return Long.parseLong(sub);
+        } catch (NumberFormatException e) {
+            throw new JwtException("Invalid subject format", e);
+        }
     }
 
     public boolean isValidAccessToken(String token) {
         try {
             parseAccessTokenAndGetUserId(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (JwtException e) {
             log.debug("Invalid access token: {}", e.getMessage());
             return false;
         }
