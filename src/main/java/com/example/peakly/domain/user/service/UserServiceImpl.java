@@ -7,9 +7,15 @@ import com.example.peakly.domain.user.entity.InitialData;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.InitialDataRepository;
 import com.example.peakly.domain.user.repository.UserRepository;
+import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
+import com.example.peakly.global.apiPayload.exception.GeneralException;
 import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +26,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public InitialSettingResponse saveInitialSetting(Long userId, InitialSettingRequest req) {
+    public InitialSettingResponse saveInitialSetting(Long userId, @NotNull InitialSettingRequest req) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다.")); // 여기 GeneralException으로 바꾸셔도 됩니다.
+                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
 
         if (initialDataRepository.existsByUserId(userId)) {
-            throw new IllegalStateException("초기 데이터가 이미 등록되어 있습니다.");
+            throw new GeneralException(UserErrorStatus.USER_409_001);
         }
 
         user.updateJob(req.job());
@@ -38,9 +44,14 @@ public class UserServiceImpl implements UserService {
         );
 
         InitialData data = InitialData.create(user, cmd);
-        InitialData saved = initialDataRepository.save(data);
 
-        String recordedAt = saved.getCreatedAt().toString();
+        InitialData saved;
+        try {
+            saved = initialDataRepository.save(data);
+            initialDataRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new GeneralException(UserErrorStatus.USER_409_001);
+        }
 
         return new InitialSettingResponse(
                 userId,
@@ -49,7 +60,7 @@ public class UserServiceImpl implements UserService {
                 req.subjectivePeaktime(),
                 req.caffeineResponsiveness(),
                 req.noiseSensitivity(),
-                recordedAt
+                saved.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")).toOffsetDateTime()
         );
     }
 }
