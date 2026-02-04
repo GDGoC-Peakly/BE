@@ -10,13 +10,23 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 
 @Configuration
 public class RedisConfig {
-    // 문자열 저장용
+    /**
+     * Create a StringRedisTemplate configured with the provided Redis connection factory.
+     *
+     * @param cf the RedisConnectionFactory used by the template
+     * @return a StringRedisTemplate that uses the given connection factory
+     */
     @Bean
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory cf) {
         return new StringRedisTemplate(cf);
     }
 
-    // 객체 저장용
+    /**
+     * Creates and configures a RedisTemplate for String keys and JSON-serialized Object values.
+     *
+     * @param cf the RedisConnectionFactory used by the template
+     * @return a RedisTemplate<String, Object> with string serializers for keys and hash keys and JSON serializers for values and hash values
+     */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -32,4 +42,3 @@ public class RedisConfig {
         return template;
     }
 }
-

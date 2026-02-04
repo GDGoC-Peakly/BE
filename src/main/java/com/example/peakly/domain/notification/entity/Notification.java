@@ -44,6 +44,15 @@ public class Notification extends BaseEntity {
     private User user;
 
 
+    /**
+     * Creates a new Notification for the given user with the specified title, body, and type.
+     *
+     * @param user  the recipient of the notification
+     * @param title the notification title
+     * @param body  the notification body
+     * @param type  the notification type
+     * @return the newly created Notification with `isRead` initialized to `false`
+     */
     public static Notification create(User user, String title, String body, NotificationType type
     ) {
         Notification n = new Notification();
@@ -55,6 +64,9 @@ public class Notification extends BaseEntity {
         return n;
     }
 
+    /**
+     * Marks the notification as read.
+     */
     public void markAsRead() {
         this.isRead = true;
     }

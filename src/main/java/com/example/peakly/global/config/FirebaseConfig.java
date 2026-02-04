@@ -17,6 +17,14 @@ public class FirebaseConfig {
     @Value("${firebase.credentials.path}")
     private Resource serviceAccount;
 
+    /**
+     * Initializes the FirebaseApp using the configured service account credentials.
+     *
+     * This method loads credentials from the injected `serviceAccount` resource and initializes
+     * Firebase only if no FirebaseApp instances are already registered to avoid duplicate initialization.
+     *
+     * @throws IOException if the service account resource cannot be read
+     */
     @PostConstruct
     public void init() throws IOException {
         if (!FirebaseApp.getApps().isEmpty()) return; // 중복 초기화 방지

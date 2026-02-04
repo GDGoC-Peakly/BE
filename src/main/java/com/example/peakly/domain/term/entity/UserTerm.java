@@ -44,6 +44,14 @@ public class UserTerm extends BaseEntity {
     @Column(name = "agreed_at", nullable = false)
     private LocalDateTime agreedAt;
 
+    /**
+     * Creates a new UserTerm recording that the given user agreed to the specified term.
+     *
+     * @param user the user who agreed to the term
+     * @param term the term that was agreed to
+     * @param agreedAt the timestamp when the agreement occurred; if null, the current time is used
+     * @return a new UserTerm with `isAgreed` set to `true` and `agreedAt` initialized
+     */
     public static UserTerm agree(User user, Terms term, LocalDateTime agreedAt) {
         UserTerm ut = new UserTerm();
         ut.user = user;
@@ -53,9 +61,13 @@ public class UserTerm extends BaseEntity {
         return ut;
     }
 
+    /**
+     * Marks the user's agreement as withdrawn and records the withdrawal time.
+     *
+     * Sets the agreement flag to `false` and updates `agreedAt` to the current time.
+     */
     public void withdrawAgreement() {
         this.isAgreed = false;
         this.agreedAt = LocalDateTime.now();
     }
 }
-

@@ -33,6 +33,13 @@ public class DeviceToken extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /**
+     * Create a DeviceToken associated with the given user and FCM token.
+     *
+     * @param user the User to associate with the device token
+     * @param fcmToken the Firebase Cloud Messaging token string
+     * @return a new DeviceToken instance with the user and fcmToken set
+     */
     public static DeviceToken of(User user, String fcmToken) {
         DeviceToken dt = new DeviceToken();
         dt.user = user;
@@ -40,6 +47,11 @@ public class DeviceToken extends BaseEntity {
         return dt;
     }
 
+    /**
+     * Update the stored Firebase Cloud Messaging (FCM) token for this device.
+     *
+     * @param fcmToken the new FCM token to persist
+     */
     public void updateToken(String fcmToken) {
         this.fcmToken = fcmToken;
     }

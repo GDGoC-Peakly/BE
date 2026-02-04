@@ -7,10 +7,20 @@ public enum Insight {
 
     private final String message;
 
+    /**
+     * Initializes an Insight enum constant with its display message.
+     *
+     * @param message the display message associated with the enum constant
+     */
     Insight(String message) {
         this.message = message;
     }
 
+    /**
+     * Message associated with the enum constant.
+     *
+     * @return the message string associated with this enum constant
+     */
     public String getMessage() {
         return message;
     }
