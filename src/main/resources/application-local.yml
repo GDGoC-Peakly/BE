@@ -1,11 +1,7 @@
 server:
   port: 8080
-  profile: local
 
 spring:
-  config:
-    activate:
-      on-profile: local
   datasource:
     url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
     username: ${DB_USERNAME}
@@ -13,8 +9,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: update
@@ -26,3 +22,9 @@ spring:
 firebase:
   credentials:
     path: classpath:firebase/serviceAccount.json
+
+jwt:
+  secret: ${JWT_SECRET:THIS_IS_A_DEV_SECRET_KEY_WITH_32+_BYTES_123456}
+  issuer: peakly
+  access-token-exp-seconds: 3600
+  refresh-token-exp-seconds: 1209600
