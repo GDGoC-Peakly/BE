@@ -2,7 +2,6 @@ server:
   port: 8080
   profile: local
 
-
 spring:
   config:
     activate:
@@ -24,3 +23,6 @@ spring:
       hibernate:
         format_sql: true
 
+firebase:
+  credentials:
+    path: classpath:firebase/serviceAccount.json
