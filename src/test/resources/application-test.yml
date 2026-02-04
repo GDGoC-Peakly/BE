@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/peakly}
+    username: ${DB_USER:root}
+    password: ${DB_ROOT_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+jwt:
+  secret: ${JWT_SECRET:test-secret-key-for-dev-and-its-logger-than-32bytes}
+  issuer: peakly
+  access-token-exp-seconds: 3600
+  refresh-token-exp-seconds: 1209600
