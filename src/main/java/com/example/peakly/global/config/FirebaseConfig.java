@@ -21,10 +21,11 @@ public class FirebaseConfig {
     public void init() throws IOException {
         if (!FirebaseApp.getApps().isEmpty()) return; // 중복 초기화 방지
 
-        FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount.getInputStream()))
-                .build();
-
-        FirebaseApp.initializeApp(options);
+        try (var in = serviceAccount.getInputStream()) {
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(in))
+                    .build();
+            FirebaseApp.initializeApp(options);
+        }
     }
 }

@@ -5,6 +5,7 @@ import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -45,6 +46,8 @@ public class UserTerm extends BaseEntity {
     private LocalDateTime agreedAt;
 
     public static UserTerm agree(User user, Terms term, LocalDateTime agreedAt) {
+        java.util.Objects.requireNonNull(user, "user");
+        java.util.Objects.requireNonNull(term, "term");
         UserTerm ut = new UserTerm();
         ut.user = user;
         ut.term = term;

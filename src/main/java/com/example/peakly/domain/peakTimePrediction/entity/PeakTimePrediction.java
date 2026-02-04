@@ -39,6 +39,7 @@ public class PeakTimePrediction extends BaseEntity {
     @Column(name = "base_date", nullable = false)
     private LocalDate baseDate;
 
+    @NotNull
     @Lob
     @Column(name = "window_json", nullable = false, columnDefinition = "JSON")
     private String windowJson;
@@ -47,6 +48,7 @@ public class PeakTimePrediction extends BaseEntity {
     @Column(name = "model_version", nullable = false, length = 50)
     private String modelVersion;
 
+    @NotNull
     @Column(name = "computed_at", nullable = false)
     private LocalDateTime computedAt;
 

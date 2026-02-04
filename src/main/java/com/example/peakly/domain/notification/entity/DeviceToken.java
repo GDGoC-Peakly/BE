@@ -26,7 +26,7 @@ public class DeviceToken extends BaseEntity {
     @Column(name = "token_id")
     private Long id;
 
-    @Column(name = "fcm_token", nullable = false, length = 100)
+    @Column(name = "fcm_token", nullable = false, length = 512)
     private String fcmToken;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

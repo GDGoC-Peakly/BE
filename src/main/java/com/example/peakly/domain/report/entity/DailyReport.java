@@ -49,6 +49,7 @@ public class DailyReport extends BaseEntity {
     @Column(name = "accuracy_rate", nullable = false)
     private Float accuracyRate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "insight", length = 255)
     private Insight insight;
 
