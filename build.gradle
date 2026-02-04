@@ -31,6 +31,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.1'
+
+    // security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
     // JWT
@@ -38,14 +46,14 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
+    // DB
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
     // Firebase
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
-    // DB
-    runtimeOnly 'com.mysql:mysql-connector-j'
 
     // lombok
     compileOnly 'org.projectlombok:lombok'
@@ -56,7 +64,6 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-
 
 tasks.named('test') {
     useJUnitPlatform()
