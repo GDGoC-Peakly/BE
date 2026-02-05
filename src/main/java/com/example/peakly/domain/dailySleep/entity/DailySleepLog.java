@@ -19,6 +19,12 @@ import java.time.LocalTime;
 @Entity
 @Table(
         name = "daily_sleep_logs",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uq_daily_sleep_user_date",
+                        columnNames = {"user_id", "base_date"}
+                )
+        },
         indexes = {
                 // "하루 수면 체크인 조회"
                 @Index(name = "idx_sleep_user_date", columnList = "user_id, base_date")
