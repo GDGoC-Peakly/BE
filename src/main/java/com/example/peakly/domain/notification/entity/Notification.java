@@ -46,6 +46,11 @@ public class Notification extends BaseEntity {
 
     public static Notification create(User user, String title, String body, NotificationType type
     ) {
+        if (user == null) throw new IllegalArgumentException("user는 필수입니다.");
+        if (type == null) throw new IllegalArgumentException("notificationType은 필수입니다.");
+        if (title == null || title.isBlank()) throw new IllegalArgumentException("title은 필수입니다.");
+        if (body == null || body.isBlank()) throw new IllegalArgumentException("body는 필수입니다.");
+
         Notification n = new Notification();
         n.user = user;
         n.title = title;
