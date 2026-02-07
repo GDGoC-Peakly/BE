@@ -36,7 +36,7 @@ public class Notification extends BaseEntity {
     @Column(name = "notification_type", nullable = false, length = 30)
     private NotificationType notificationType;
 
-    @Column(name = "is_read")
+    @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
