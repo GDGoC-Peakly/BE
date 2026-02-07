@@ -43,22 +43,22 @@ public class UserTerm extends BaseEntity {
     private Boolean isAgreed = true;
 
     @Column(name = "agreed_at", nullable = false)
-    private LocalDateTime agreedAt;
+    private LocalDateTime updateAt;
 
-    public static UserTerm agree(User user, Terms term, LocalDateTime agreedAt) {
+    public static UserTerm agree(User user, Terms term, LocalDateTime updateAt) {
         java.util.Objects.requireNonNull(user, "user");
         java.util.Objects.requireNonNull(term, "term");
         UserTerm ut = new UserTerm();
         ut.user = user;
         ut.term = term;
         ut.isAgreed = true;
-        ut.agreedAt = (agreedAt != null ? agreedAt : LocalDateTime.now());
+        ut.updateAt = (updateAt != null ? updateAt : LocalDateTime.now());
         return ut;
     }
 
     public void withdrawAgreement() {
         this.isAgreed = false;
-        this.agreedAt = LocalDateTime.now();
+        this.updateAt = LocalDateTime.now();
     }
 }
 
