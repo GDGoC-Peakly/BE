@@ -43,11 +43,11 @@ public class DailyReport extends BaseEntity {
     @Column(name = "total_focus_sec", nullable = false)
     private Integer totalFocusSec = 0;
 
-    @Column(name = "achievement_rate")
-    private Float achievementRate;
+    @Column(name = "achievement_rate", nullable = false)
+    private Double achievementRate = 0.0;
 
     @Column(name = "accuracy_rate", nullable = false)
-    private Float accuracyRate;
+    private Double accuracyRate0f = 0.0;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "insight", length = 255)
