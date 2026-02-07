@@ -47,7 +47,7 @@ public class DailyReport extends BaseEntity {
     private Double achievementRate = 0.0;
 
     @Column(name = "accuracy_rate", nullable = false)
-    private Double accuracyRate0f = 0.0;
+    private Double accuracyRate = 0.0;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "insight", length = 255)
