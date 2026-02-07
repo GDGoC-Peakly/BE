@@ -8,6 +8,8 @@ import jakarta.validation.constraints.PastOrPresent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,8 +42,8 @@ public class PeakTimePrediction extends BaseEntity {
     private LocalDate baseDate;
 
     @NotNull
-    @Lob
-    @Column(name = "window_json", nullable = false, columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name="window_json", columnDefinition="json", nullable=false)
     private String windowJson;
 
     @NotNull
