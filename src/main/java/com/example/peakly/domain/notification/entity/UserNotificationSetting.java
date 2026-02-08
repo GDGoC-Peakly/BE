@@ -1,5 +1,6 @@
 package com.example.peakly.domain.notification.entity;
 
+import com.example.peakly.domain.notification.enums.NotificationType;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
