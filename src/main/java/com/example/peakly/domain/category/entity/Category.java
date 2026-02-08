@@ -44,4 +44,23 @@ public class Category extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "major_category_id", nullable = false)
     private MajorCategory majorCategory;
+
+    public static Category create(User user, MajorCategory majorCategory, String name, int sortOrder) {
+        Category c = new Category();
+        c.user = user;
+        c.majorCategory = majorCategory;
+        c.name = name;
+        c.sortOrder = sortOrder;
+        return c;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+
+
 }
