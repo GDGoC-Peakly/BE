@@ -7,6 +7,7 @@ import com.example.peakly.domain.category.dto.request.UpdateCustomTagRequest;
 import com.example.peakly.domain.category.dto.response.CreateCustomTagsResponse;
 import com.example.peakly.domain.category.dto.response.CustomTagItemDto;
 import com.example.peakly.domain.category.dto.response.MajorCategoryItemDto;
+import com.example.peakly.domain.category.dto.response.MajorWithCustomTagsResponse;
 import com.example.peakly.domain.category.entity.Category;
 import com.example.peakly.domain.category.entity.MajorCategory;
 import com.example.peakly.domain.category.repository.CategoryRepository;
@@ -90,6 +91,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .filter(n -> !already.contains(n))
                 .toList();
 
+        List<Category> saved = List.of();
+
         if (!toCreate.isEmpty()) {
             // sortOrder는 기존 목록 뒤에 이어붙이기
             int baseSortOrder = categoryRepository.countMyByMajor(userId, majorCategoryId);
@@ -102,20 +105,19 @@ public class CategoryServiceImpl implements CategoryService {
             }
 
             try {
-                categoryRepository.saveAll(entities);
+                saved = categoryRepository.saveAll(entities);
             } catch (DataIntegrityViolationException e) {
                 // 동시성 등으로 유니크 충돌 가능
                 throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_NAME_DUPLICATE);
             }
         }
 
-        //결과는 최신 목록으로 반환
-        List<CustomTagItemDto> items = categoryRepository.findMyByMajor(userId, majorCategoryId)
-                .stream()
+        List<CustomTagItemDto> createdTags = saved.stream()
+                .sorted(Comparator.comparing(Category::getSortOrder).thenComparing(Category::getId))
                 .map(CategoryConverter::toCustomTagItemDto)
                 .toList();
 
-        return new CreateCustomTagsResponse(majorCategoryId, items);
+        return new CreateCustomTagsResponse(majorCategoryId, createdTags);
     }
 
 
@@ -174,9 +176,37 @@ public class CategoryServiceImpl implements CategoryService {
         return null;
     }
 
+    @Override
+    @Transactional
+    public List<MajorWithCustomTagsResponse> getAllMajorWithMyCustomTags(Long userId) {
+        if (userId == null) throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_FORBIDDEN);
+
+        List<MajorCategory> majors = majorCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
+
+        // 유저의 커스텀 태그를 한 번에 조회 (N+1 방지)
+        List<Category> categories = categoryRepository.findAllMyWithMajor(userId);
+
+        Map<Long, List<Category>> grouped = categories.stream()
+                .collect(Collectors.groupingBy(c -> c.getMajorCategory().getId()));
+
+        return majors.stream()
+                .map(m -> {
+                    List<CustomTagItemDto> tags = grouped.getOrDefault(m.getId(), List.of()).stream()
+                            .sorted(Comparator.comparing(Category::getSortOrder).thenComparing(Category::getId))
+                            .map(CategoryConverter::toCustomTagItemDto)
+                            .toList();
+
+                    return new MajorWithCustomTagsResponse(
+                            new MajorCategoryItemDto(m.getId(), m.getName()),
+                            tags);
+                })
+                .toList();
+    }
+
+
 
     private static Long require(Long value) {
-        if (value == null) throw new IllegalArgumentException("필수 입력값이 없습니다.");
+        if (value == null) throw new GeneralException(CategoryErrorCode.REQUIRED_FIELD_MISSING);
         return value;
     }
 
