@@ -107,7 +107,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
                 HttpHeaders.EMPTY,
                 ErrorStatus._INTERNAL_SERVER_ERROR.getHttpStatus(),
                 request,
-                e.getMessage()
+                "서버 내부 오류가 발생했습니다."
         );
     }
 
