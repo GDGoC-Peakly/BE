@@ -42,4 +42,13 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
       and c.majorCategory.id = :majorCategoryId
 """)
     int countMyByMajor(Long userId, Long majorCategoryId);
+
+    @Query("""
+    select c
+    from Category c
+    join fetch c.majorCategory m
+    where c.user.id = :userId
+""")
+    List<Category> findAllMyWithMajor(Long userId);
+
 }

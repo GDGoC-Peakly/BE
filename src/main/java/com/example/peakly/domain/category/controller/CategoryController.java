@@ -11,7 +11,6 @@ import com.example.peakly.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,7 +23,7 @@ import static com.example.peakly.global.security.SecurityUtil.currentUserId;
 @Tag(name = "Category", description = "대분류/커스텀 카테고리 조회 API")
 public class CategoryController {
 
-    public final CategoryService categoryService;
+    private final CategoryService categoryService;
     Long userId = currentUserId();
 
     // 대분류만 조회
@@ -111,6 +110,14 @@ public class CategoryController {
 
         categoryService.deleteCustomTag(userId, customTagId);
         return ApiResponse.onSuccess("삭제되었습니다.");
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<List<MajorWithCustomTagsResponse>> getAllMajorWithMyCustomTags() {
+        Long userId = currentUserId();
+
+        List<MajorWithCustomTagsResponse> response = categoryService.getAllMajorWithMyCustomTags(userId);
+        return ApiResponse.onSuccess(response);
     }
 
 }
