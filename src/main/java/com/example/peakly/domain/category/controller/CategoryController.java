@@ -10,6 +10,7 @@ import com.example.peakly.domain.category.service.CategoryService;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -76,7 +77,7 @@ public class CategoryController {
             description = "특정 대분류에 대해 커스텀 태그를 생성합니다."
     )
     @PostMapping("/custom")
-    public ApiResponse<CreateCustomTagsResponse> createCustomTags(@RequestBody CreateCustomTagsRequest request) {
+    public ApiResponse<CreateCustomTagsResponse> createCustomTags(@Valid @RequestBody CreateCustomTagsRequest request) {
         Long userId = currentUserId();
 
         CreateCustomTagsResponse createCustom = categoryService.createCustomTags(userId, request);
@@ -90,7 +91,7 @@ public class CategoryController {
             description = "커스텀 태그의 이름 또는 정렬순서를 수정합니다."
     )
     @PatchMapping("/custom/{customTagId}")
-    public ApiResponse<String> updateCustomTag(@PathVariable Long customTagId, @RequestBody UpdateCustomTagRequest request
+    public ApiResponse<String> updateCustomTag(@Valid @PathVariable Long customTagId, @RequestBody UpdateCustomTagRequest request
     ) {
         Long userId = currentUserId();
 
