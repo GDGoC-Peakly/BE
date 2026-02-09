@@ -99,11 +99,12 @@ public class AuthServiceImpl implements AuthService {
 
         emailVerifyMailSender.sendVerifyMail(email, rawToken);
 
-        entity.markSent(now);
+        LocalDateTime sentAt = LocalDateTime.now(DEFAULT_ZONE);
+        entity.markSent(sentAt);
 
         return new EmailVerifySendResponse(
                 email,
-                OffsetDateTime.now(DEFAULT_ZONE)
+                sentAt.atZone(DEFAULT_ZONE).toOffsetDateTime()
         );
     }
 
