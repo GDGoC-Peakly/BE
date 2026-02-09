@@ -46,7 +46,7 @@ public class EmailVerificationToken extends BaseEntity {
     @Column(name = "request_ip", length = 255, nullable = true)
     private String requestIp;
 
-    @Column(name = "user_agent", length = 255, nullable = true)
+    @Column(name = "user_agent", length = 1024, nullable = true)
     private String userAgent;
 
 
