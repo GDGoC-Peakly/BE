@@ -6,6 +6,9 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Component
 @RequiredArgsConstructor
 public class EmailVerifyMailSender {
@@ -43,6 +46,6 @@ public class EmailVerifyMailSender {
     private String buildVerifyLink(String rawToken) {
         // linkBaseUrl에 이미 ?가 포함될 수도 있으니 안전하게 처리
         String sep = linkBaseUrl.contains("?") ? "&" : "?";
-        return linkBaseUrl + sep + "token=" + rawToken;
+        return linkBaseUrl + sep + "token=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
     }
 }
