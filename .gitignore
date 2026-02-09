@@ -41,6 +41,3 @@ src/main/resources/application.yml
 
 ###firevbase 설정 정보###
 src/main/resources/firebase/serviceAccount.json
-
-### Gradle 설정 파일 제외
-##build.gradle

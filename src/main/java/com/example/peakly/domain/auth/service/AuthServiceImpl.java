@@ -1,15 +1,13 @@
 package com.example.peakly.domain.auth.service;
 
 import com.example.peakly.domain.auth.command.AuthSessionIssueCommand;
-import com.example.peakly.domain.auth.dto.request.CheckEmailRequest;
-import com.example.peakly.domain.auth.dto.request.LoginRequest;
-import com.example.peakly.domain.auth.dto.request.SignupRequest;
-import com.example.peakly.domain.auth.dto.response.CheckEmailResponse;
-import com.example.peakly.domain.auth.dto.response.LoginResponse;
-import com.example.peakly.domain.auth.dto.response.SignupResponse;
+import com.example.peakly.domain.auth.dto.request.*;
+import com.example.peakly.domain.auth.dto.response.*;
 import com.example.peakly.domain.auth.entity.AuthSession;
+import com.example.peakly.domain.auth.entity.EmailVerificationToken;
 import com.example.peakly.domain.auth.jwt.JwtTokenProvider;
 import com.example.peakly.domain.auth.repository.AuthSessionRepository;
+import com.example.peakly.domain.auth.repository.EmailVerificationTokenRepository;
 import com.example.peakly.domain.user.entity.AuthProvider;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.entity.UserStatus;
@@ -26,8 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.HexFormat;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +39,23 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthSessionRepository authSessionRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final EmailVerifyMailSender emailVerifyMailSender;
 
     @Value("${jwt.refresh-token-exp-seconds}")
     private long refreshExpSeconds;
+
+    @Value("${auth.email-verify.token-ttl-minutes:30}")
+    private long emailVerifyTtlMinutes;
+
+    @Value("${auth.email-verify.signup-window-minutes:30}")
+    private long signupWindowMinutes;
+
+    @Value("${auth.email-verify.rate-limit.window-seconds:60}")
+    private long rateLimitWindowSeconds;
+
+    @Value("${auth.email-verify.rate-limit.max-per-window:3}")
+    private long rateLimitMaxPerWindow;
 
     @Override
     @Transactional(readOnly = true)
@@ -52,9 +66,83 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    public EmailVerifySendResponse sendEmailVerify(EmailVerifySendRequest req) {
+        String email = req.email();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new GeneralException(AuthErrorStatus.EMAIL_ALREADY_REGISTERED);
+        }
+
+        LocalDateTime now = LocalDateTime.now(DEFAULT_ZONE);
+        LocalDateTime after = now.minusSeconds(rateLimitWindowSeconds);
+        long recent = emailVerificationTokenRepository.countByEmailAndCreatedAtAfter(email, after);
+        if (recent >= rateLimitMaxPerWindow) {
+            throw new GeneralException(AuthErrorStatus.EMAIL_VERIFY_RATE_LIMITED);
+        }
+
+        // 원문 토큰 발급 (메일 링크에 포함될 값)
+        String rawToken = UUID.randomUUID().toString().replace("-", "");
+        String tokenHash = sha256Hex(rawToken);
+
+        LocalDateTime expiresAt = now.plusMinutes(emailVerifyTtlMinutes);
+
+        // TODO: requestIp/userAgent는 컨트롤러에서 받아서 넘기기
+        EmailVerificationToken entity = EmailVerificationToken.issue(
+                email,
+                tokenHash,
+                expiresAt,
+                null,
+                null
+        );
+
+        emailVerificationTokenRepository.save(entity);
+
+        emailVerifyMailSender.sendVerifyMail(email, rawToken);
+
+        entity.markSent(now);
+
+        return new EmailVerifySendResponse(
+                email,
+                OffsetDateTime.now(DEFAULT_ZONE)
+        );
+    }
+
+    @Override
+    @Transactional
+    public EmailVerifyResponse verifyEmail(EmailVerifyRequest req) {
+        String rawToken = req.token();
+        String tokenHash = sha256Hex(rawToken);
+
+        EmailVerificationToken token = emailVerificationTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new GeneralException(AuthErrorStatus.EMAIL_VERIFICATION_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now(DEFAULT_ZONE);
+
+        if (token.isUsed()) {
+            throw new GeneralException(AuthErrorStatus.EMAIL_TOKEN_ALREADY_USED);
+        }
+        if (token.isExpired(now)) {
+            throw new GeneralException(AuthErrorStatus.EMAIL_TOKEN_EXPIRED);
+        }
+
+        token.markUsed(now);
+        // save 호출 없이도 영속 상태면 flush 시 반영됩니다.
+        return new EmailVerifyResponse(true);
+    }
+
+    @Override
+    @Transactional
     public SignupResponse signup(SignupRequest req) {
+        LocalDateTime now = LocalDateTime.now(DEFAULT_ZONE);
+        LocalDateTime verifiedAfter = now.minusMinutes(signupWindowMinutes);
+
+        boolean verified = emailVerificationTokenRepository.existsByEmailAndUsedAtAfter(req.email(), verifiedAfter);
+        if (!verified) {
+            throw new GeneralException(AuthErrorStatus.EMAIL_VERIFICATION_REQUIRED);
+        }
+
         if (userRepository.existsByEmail(req.email())) {
-            throw new GeneralException(AuthErrorStatus.AUTH_409_001);
+            throw new GeneralException(AuthErrorStatus.EMAIL_ALREADY_REGISTERED);
         }
 
         String passwordHash = passwordEncoder.encode(req.password());
@@ -68,7 +156,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             saved = userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
-            throw new GeneralException(AuthErrorStatus.AUTH_409_001);
+            throw new GeneralException(AuthErrorStatus.EMAIL_ALREADY_REGISTERED);
         }
 
         return new SignupResponse(
@@ -82,18 +170,18 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new GeneralException(AuthErrorStatus.AUTH_401_001));
+                .orElseThrow(() -> new GeneralException(AuthErrorStatus.INVALID_EMAIL_OR_PASSWORD));
 
         if (user.getProvider() != AuthProvider.EMAIL) {
-            throw new GeneralException(AuthErrorStatus.AUTH_401_001);
+            throw new GeneralException(AuthErrorStatus.INVALID_EMAIL_OR_PASSWORD);
         }
 
         if (user.getUserStatus() != UserStatus.ACTIVE) {
-            throw new GeneralException(AuthErrorStatus.AUTH_403_001);
+            throw new GeneralException(AuthErrorStatus.USER_DISABLED);
         }
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
-            throw new GeneralException(AuthErrorStatus.AUTH_401_001);
+            throw new GeneralException(AuthErrorStatus.INVALID_EMAIL_OR_PASSWORD);
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
