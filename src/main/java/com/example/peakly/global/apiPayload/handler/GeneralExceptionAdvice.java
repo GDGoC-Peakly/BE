@@ -114,7 +114,6 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
     /**
      * === 내부 공통 처리 ===
      */
-
     private ResponseEntity<Object> handleExceptionInternal(
             Exception e,
             BaseErrorCode code,
@@ -150,6 +149,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
      * - 매핑되지 않은 케이스는 무조건 ErrorStatus._BAD_REQUEST
      * - 잘못된 AuthErrorStatus로 떨어지는 것을 방지
      */
+    // TODO: 도메인별 ValidationErrorMapper로 분리 (MVP 이후)
     private BaseErrorCode mapFieldErrorToErrorCode(FieldError fe) {
         String field = fe.getField();      // email, password, nickname, token ...
         String constraint = fe.getCode();  // NotBlank, Email, Size, Pattern ...
