@@ -176,7 +176,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
         // token (이메일 인증)
         if ("token".equals(field)) {
             if ("NotBlank".equals(constraint)) return AuthErrorStatus.EMAIL_TOKEN_REQUIRED;
-            return AuthErrorStatus.EMAIL_TOKEN_REQUIRED;
+            return ErrorStatus._BAD_REQUEST;
         }
 
         // fallback: 공통 BAD_REQUEST
