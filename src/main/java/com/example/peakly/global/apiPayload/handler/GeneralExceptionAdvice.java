@@ -57,7 +57,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
 
         BaseErrorCode mapped = mapFieldErrorToErrorCode(fe);
 
-        ApiResponse<Object> body = ApiResponse.onFailure(mapped, null);
+        ApiResponse<Object> body = ApiResponse.onFailure(mapped, fe.getField());
         return super.handleExceptionInternal(
                 ex,
                 body,
