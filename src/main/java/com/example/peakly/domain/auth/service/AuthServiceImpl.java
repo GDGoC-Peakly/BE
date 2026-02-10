@@ -134,16 +134,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public SignupResponse signup(SignupRequest req) {
+        if (userRepository.existsByEmail(req.email())) {
+            throw new GeneralException(AuthErrorStatus.EMAIL_ALREADY_REGISTERED);
+        }
+
         LocalDateTime now = LocalDateTime.now(DEFAULT_ZONE);
         LocalDateTime verifiedAfter = now.minusMinutes(signupWindowMinutes);
 
         boolean verified = emailVerificationTokenRepository.existsByEmailAndUsedAtAfter(req.email(), verifiedAfter);
         if (!verified) {
             throw new GeneralException(AuthErrorStatus.EMAIL_VERIFICATION_REQUIRED);
-        }
-
-        if (userRepository.existsByEmail(req.email())) {
-            throw new GeneralException(AuthErrorStatus.EMAIL_ALREADY_REGISTERED);
         }
 
         String passwordHash = passwordEncoder.encode(req.password());
