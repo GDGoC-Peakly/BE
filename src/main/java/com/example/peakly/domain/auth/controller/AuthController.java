@@ -3,9 +3,13 @@ package com.example.peakly.domain.auth.controller;
 import com.example.peakly.domain.auth.dto.request.CheckEmailRequest;
 import com.example.peakly.domain.auth.dto.request.LoginRequest;
 import com.example.peakly.domain.auth.dto.request.SignupRequest;
+import com.example.peakly.domain.auth.dto.request.EmailVerifySendRequest;
+import com.example.peakly.domain.auth.dto.request.EmailVerifyRequest;
 import com.example.peakly.domain.auth.dto.response.CheckEmailResponse;
-import com.example.peakly.domain.auth.dto.response.LoginResponse;
 import com.example.peakly.domain.auth.dto.response.SignupResponse;
+import com.example.peakly.domain.auth.dto.response.LoginResponse;
+import com.example.peakly.domain.auth.dto.response.EmailVerifySendResponse;
+import com.example.peakly.domain.auth.dto.response.EmailVerifyResponse;
 import com.example.peakly.domain.auth.service.AuthService;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import jakarta.validation.Valid;
@@ -34,5 +38,16 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
         return ApiResponse.onSuccess(authService.login(req));
+    }
+
+    @PostMapping("/email-verify/send")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<EmailVerifySendResponse> sendEmailVerify(@Valid @RequestBody EmailVerifySendRequest req) {
+        return ApiResponse.onSuccess(authService.sendEmailVerify(req));
+    }
+
+    @PostMapping("/email-verify")
+    public ApiResponse<EmailVerifyResponse> verifyEmail(@Valid @RequestBody EmailVerifyRequest req) {
+        return ApiResponse.onSuccess(authService.verifyEmail(req));
     }
 }
