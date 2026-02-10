@@ -150,6 +150,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
      * - 잘못된 AuthErrorStatus로 떨어지는 것을 방지
      */
     // TODO: 도메인별 ValidationErrorMapper로 분리 (MVP 이후)
+    // TODO(MVP 이후): 다중 필드 Validation 에러 응답 지원 검토
     private BaseErrorCode mapFieldErrorToErrorCode(FieldError fe) {
         String field = fe.getField();      // email, password, nickname, token ...
         String constraint = fe.getCode();  // NotBlank, Email, Size, Pattern ...
