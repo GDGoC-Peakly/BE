@@ -217,7 +217,8 @@ public class AuthServiceImpl implements AuthService {
             byte[] digest = md.digest(raw.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest); // 64 chars
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to hash refresh token", e);
+            // TODO: 디벨롭 기간에 InternalException 구현하고 수정하기
+            throw new IllegalStateException("SHA-256 hashing failed", e);
         }
     }
 }
