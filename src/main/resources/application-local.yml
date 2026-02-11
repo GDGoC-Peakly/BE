@@ -1,21 +1,55 @@
+server:
+  port: 8080
+
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-
-  sql:
-    init:
-      mode: never
-
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
   jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        show_sql: true
         format_sql: true
-        use_sql_comments: true
-        hbm2ddl:
-          auto: update
-        default_batch_fetch_size: 1000
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}   # "앱 비밀번호" (구글 로그인 비번 X)
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+firebase:
+  credentials:
+    path: classpath:firebase/serviceAccount.json
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: peakly
+  access-token-exp-seconds: 3600
+  refresh-token-exp-seconds: 1209600
+
+auth:
+  email-verify:
+    token-ttl-minutes: 30
+    signup-window-minutes: 30
+    rate-limit:
+      window-seconds: 60
+      max-per-window: 3
+    link-base-url: ${EMAIL_VERIFY_LINK_BASE_URL:https://example.com/email-verify}
+
