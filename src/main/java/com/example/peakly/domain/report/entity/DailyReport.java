@@ -61,5 +61,12 @@ public class DailyReport extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @PrePersist
+    @PreUpdate
+    private void syncWeekday() {
+        if (this.reportDate == null) return;
+        this.weekday = Weekday.from(this.reportDate.getDayOfWeek());
+    }
+
 }
 
