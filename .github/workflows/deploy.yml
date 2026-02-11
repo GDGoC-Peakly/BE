@@ -53,10 +53,8 @@ jobs:
           key: ${{ secrets.PEM_KEY }}
           script: |
             set -e
-            sudo mkdir -p /home/ubuntu/app
-            sudo chown -R ubuntu:ubuntu /home/ubuntu/app
-            cd /home/ubuntu/app
-
+            cd /home/ubuntu/peakly-server
+            
             # 최신 이미지 가져와서 컨테이너 교체 실행
             sudo docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
             sudo docker pull sungminju/peakly:latest
