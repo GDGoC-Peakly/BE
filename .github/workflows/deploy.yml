@@ -70,6 +70,6 @@ jobs:
               sudo docker-compose -p mova up -d --remove-orphans
             fi
 
-            # 오래된 이미지 정리(선택)
+            # 오래된 이미지 정리(선택).
             sudo docker image prune -af --filter "until=24h"
             
