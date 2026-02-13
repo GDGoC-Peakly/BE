@@ -10,16 +10,21 @@ import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class InitialDataServiceImpl implements InitialDataService {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final UserRepository userRepository;
     private final InitialDataRepository initialDataRepository;
@@ -38,8 +43,6 @@ public class InitialDataServiceImpl implements InitialDataService {
             throw new GeneralException(UserErrorStatus.INITIAL_DATA_ALREADY_REGISTERED);
         }
 
-        user.updateJob(req.job());
-
         InitialDataCreateCommand cmd = new InitialDataCreateCommand(
                 req.chronotype(),
                 req.subjectivePeaktime(),
@@ -50,6 +53,8 @@ public class InitialDataServiceImpl implements InitialDataService {
         InitialData entity = InitialData.create(user, cmd);
 
         try {
+            user.updateJob(req.job());
+
             InitialData saved = initialDataRepository.save(entity);
 
             OffsetDateTime recordedAt = resolveRecordedAt(saved);
@@ -64,12 +69,17 @@ public class InitialDataServiceImpl implements InitialDataService {
                     recordedAt
             );
         } catch (DataIntegrityViolationException e) {
+            log.warn("초기 데이터 중복 등록 시도: userId={}", userId, e);
             throw new GeneralException(UserErrorStatus.INITIAL_DATA_ALREADY_REGISTERED);
         }
     }
 
     private OffsetDateTime resolveRecordedAt(InitialData saved) {
+        if (saved.getCreatedAt() == null) {
+            return OffsetDateTime.now(KST);
+        }
         return saved.getCreatedAt()
-                .atOffset(ZoneOffset.ofHours(9));
+                .atZone(KST)
+                .toOffsetDateTime();
     }
 }
