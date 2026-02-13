@@ -33,7 +33,7 @@ public enum UserErrorStatus implements BaseErrorCode {
     // 401
     AUTHENTICATION_REQUIRED(
             HttpStatus.UNAUTHORIZED,
-            "AUTH401_001",
+            "USER401_001",
             "인증이 필요합니다."
     ),
 
@@ -54,7 +54,7 @@ public enum UserErrorStatus implements BaseErrorCode {
     USER_INTERNAL_SERVER_ERROR(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "USER500_001",
-                    "서버 에러가 발생했습니다."
+            "서버 에러가 발생했습니다."
     );
 
 
