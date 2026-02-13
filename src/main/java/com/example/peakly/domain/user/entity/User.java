@@ -34,7 +34,7 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", nullable = true, length = 50)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
@@ -86,8 +86,8 @@ public class User extends BaseEntity {
         this.userStatus = userStatus;
     }
 
-    public static User createEmailUser(String email, String passwordHash, String nickname) {
-        return new User(email, passwordHash, nickname, null, AuthProvider.EMAIL, null, UserStatus.ACTIVE);
+    public static User createEmailUser(String email, String passwordHash) {
+        return new User(email, passwordHash, null, null, AuthProvider.EMAIL, null, UserStatus.ACTIVE);
     }
 
     public void updateJob(Job job) {
@@ -95,5 +95,12 @@ public class User extends BaseEntity {
             throw new IllegalArgumentException("job은 필수입니다.");
         }
         this.job = job;
+    }
+
+    public void updateNickname(String nickname) {
+        if (nickname == null) {
+            throw new IllegalArgumentException("nickname은 필수입니다.");
+        }
+        this.nickname = nickname;
     }
 }
