@@ -17,10 +17,5 @@ public record SignupRequest(
                 regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
                 message = "비밀번호는 영문자와 숫자를 모두 포함해야 합니다."
         )
-        String password,
-
-        @Schema(example = "픽꾸잉")
-        @NotBlank(message = "닉네임을 입력해주세요.")
-        @Size(max = 50, message = "닉네임은 50자 이하여야 합니다.")
-        String nickname
+        String password
 ) {}
