@@ -9,31 +9,28 @@ import com.example.peakly.domain.user.repository.InitialDataRepository;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
-import jakarta.validation.Valid;
-import org.springframework.transaction.annotation.Transactional;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneId;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Service
-@Validated
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
-
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
+public class InitialDataServiceImpl implements InitialDataService {
 
     private final UserRepository userRepository;
     private final InitialDataRepository initialDataRepository;
 
     @Override
     @Transactional
-    public InitialSettingResponse saveInitialSetting(
-            Long userId,
-            @Valid @NotNull InitialSettingRequest req) {
+    public InitialSettingResponse createInitialSetting(Long userId, InitialSettingRequest req) {
+        if (userId == null) {
+            throw new GeneralException(UserErrorStatus.USER_NOT_FOUND);
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
 
@@ -50,24 +47,29 @@ public class UserServiceImpl implements UserService {
                 req.noiseSensitivity()
         );
 
-        InitialData data = InitialData.create(user, cmd);
+        InitialData entity = InitialData.create(user, cmd);
 
-        InitialData saved;
         try {
-            saved = initialDataRepository.save(data);
-            initialDataRepository.flush();
+            InitialData saved = initialDataRepository.save(entity);
+
+            OffsetDateTime recordedAt = resolveRecordedAt(saved);
+
+            return new InitialSettingResponse(
+                    saved.getUserId(),
+                    user.getJob(),
+                    saved.getChronotype(),
+                    saved.getSubjectivePeaktime(),
+                    saved.getCaffeineResponsiveness(),
+                    saved.getNoiseSensitivity(),
+                    recordedAt
+            );
         } catch (DataIntegrityViolationException e) {
             throw new GeneralException(UserErrorStatus.INITIAL_DATA_ALREADY_REGISTERED);
         }
+    }
 
-        return new InitialSettingResponse(
-                userId,
-                user.getJob(),
-                saved.getChronotype(),
-                saved.getSubjectivePeaktime(),
-                saved.getCaffeineResponsiveness(),
-                saved.getNoiseSensitivity(),
-                saved.getCreatedAt().atZone(DEFAULT_ZONE).toOffsetDateTime()
-        );
+    private OffsetDateTime resolveRecordedAt(InitialData saved) {
+        return saved.getCreatedAt()
+                .atOffset(ZoneOffset.ofHours(9)); // Asia/Seoul 기준
     }
 }
