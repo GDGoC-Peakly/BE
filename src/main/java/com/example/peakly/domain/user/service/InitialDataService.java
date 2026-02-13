@@ -1,8 +1,8 @@
 package com.example.peakly.domain.user.service;
 
-import com.example.peakly.domain.user.dto.request.InitialSettingRequest;
-import com.example.peakly.domain.user.dto.response.InitialSettingResponse;
+import com.example.peakly.domain.user.dto.request.InitialDataCreateRequest;
+import com.example.peakly.domain.user.dto.response.InitialDataCreateResponse;
 
 public interface InitialDataService {
-    InitialSettingResponse createInitialSetting(Long userId, InitialSettingRequest req);
+    InitialDataCreateResponse createInitialSetting(Long userId, InitialDataCreateRequest req);
 }

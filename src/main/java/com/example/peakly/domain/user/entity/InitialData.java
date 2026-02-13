@@ -54,7 +54,6 @@ public class InitialData extends BaseEntity {
 
         InitialData d = new InitialData();
         d.user = user;
-        d.userId = user.getId();
         d.chronotype = cmd.chronotype();
         d.subjectivePeaktime = cmd.subjectivePeaktime();
         d.caffeineResponsiveness = (byte) cmd.caffeineResponsiveness();

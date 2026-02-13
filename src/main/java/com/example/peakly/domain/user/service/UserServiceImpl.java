@@ -1,8 +1,8 @@
 package com.example.peakly.domain.user.service;
 
 import com.example.peakly.domain.user.command.InitialDataCreateCommand;
-import com.example.peakly.domain.user.dto.request.InitialSettingRequest;
-import com.example.peakly.domain.user.dto.response.InitialSettingResponse;
+import com.example.peakly.domain.user.dto.request.InitialDataCreateRequest;
+import com.example.peakly.domain.user.dto.response.InitialDataCreateResponse;
 import com.example.peakly.domain.user.entity.InitialData;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.InitialDataRepository;
@@ -24,50 +24,4 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
-
-    private final UserRepository userRepository;
-    private final InitialDataRepository initialDataRepository;
-
-    @Override
-    @Transactional
-    public InitialSettingResponse saveInitialSetting(
-            Long userId,
-            @Valid @NotNull InitialSettingRequest req) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
-
-        if (initialDataRepository.existsByUserId(userId)) {
-            throw new GeneralException(UserErrorStatus.INITIAL_DATA_ALREADY_REGISTERED);
-        }
-
-        user.updateJob(req.job());
-
-        InitialDataCreateCommand cmd = new InitialDataCreateCommand(
-                req.chronotype(),
-                req.subjectivePeaktime(),
-                req.caffeineResponsiveness(),
-                req.noiseSensitivity()
-        );
-
-        InitialData data = InitialData.create(user, cmd);
-
-        InitialData saved;
-        try {
-            saved = initialDataRepository.save(data);
-            initialDataRepository.flush();
-        } catch (DataIntegrityViolationException e) {
-            throw new GeneralException(UserErrorStatus.INITIAL_DATA_ALREADY_REGISTERED);
-        }
-
-        return new InitialSettingResponse(
-                userId,
-                user.getJob(),
-                saved.getChronotype(),
-                saved.getSubjectivePeaktime(),
-                saved.getCaffeineResponsiveness(),
-                saved.getNoiseSensitivity(),
-                saved.getCreatedAt().atZone(DEFAULT_ZONE).toOffsetDateTime()
-        );
-    }
 }

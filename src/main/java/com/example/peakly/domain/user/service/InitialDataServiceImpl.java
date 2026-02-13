@@ -1,8 +1,8 @@
 package com.example.peakly.domain.user.service;
 
 import com.example.peakly.domain.user.command.InitialDataCreateCommand;
-import com.example.peakly.domain.user.dto.request.InitialSettingRequest;
-import com.example.peakly.domain.user.dto.response.InitialSettingResponse;
+import com.example.peakly.domain.user.dto.request.InitialDataCreateRequest;
+import com.example.peakly.domain.user.dto.response.InitialDataCreateResponse;
 import com.example.peakly.domain.user.entity.InitialData;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.InitialDataRepository;
@@ -26,7 +26,7 @@ public class InitialDataServiceImpl implements InitialDataService {
 
     @Override
     @Transactional
-    public InitialSettingResponse createInitialSetting(Long userId, InitialSettingRequest req) {
+    public InitialDataCreateResponse createInitialSetting(Long userId, InitialDataCreateRequest req) {
         if (userId == null) {
             throw new GeneralException(UserErrorStatus.USER_NOT_FOUND);
         }
@@ -54,7 +54,7 @@ public class InitialDataServiceImpl implements InitialDataService {
 
             OffsetDateTime recordedAt = resolveRecordedAt(saved);
 
-            return new InitialSettingResponse(
+            return new InitialDataCreateResponse(
                     saved.getUserId(),
                     user.getJob(),
                     saved.getChronotype(),
@@ -70,6 +70,6 @@ public class InitialDataServiceImpl implements InitialDataService {
 
     private OffsetDateTime resolveRecordedAt(InitialData saved) {
         return saved.getCreatedAt()
-                .atOffset(ZoneOffset.ofHours(9)); // Asia/Seoul 기준
+                .atOffset(ZoneOffset.ofHours(9));
     }
 }
