@@ -6,7 +6,7 @@ import com.example.peakly.domain.user.entity.SubjectivePeaktime;
 
 import java.time.OffsetDateTime;
 
-public record InitialSettingResponse(
+public record InitialDataCreateResponse(
         Long userId,
         Job job,
         Chronotype chronotype,
