@@ -24,6 +24,6 @@ public class InitialDataController {
             @Valid @RequestBody InitialDataCreateRequest request
     ) {
         Long userId = SecurityUtil.requireUserId();
-        return ApiResponse.onSuccess(initialDataService.createInitialSetting(userId, request));
+        return ApiResponse.onSuccess(initialDataService.createInitialData(userId, request));
     }
 }

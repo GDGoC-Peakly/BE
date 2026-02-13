@@ -26,7 +26,7 @@ public class InitialDataServiceImpl implements InitialDataService {
 
     @Override
     @Transactional
-    public InitialDataCreateResponse createInitialSetting(Long userId, InitialDataCreateRequest req) {
+    public InitialDataCreateResponse createInitialData(Long userId, InitialDataCreateRequest req) {
         if (userId == null) {
             throw new GeneralException(UserErrorStatus.USER_NOT_FOUND);
         }
