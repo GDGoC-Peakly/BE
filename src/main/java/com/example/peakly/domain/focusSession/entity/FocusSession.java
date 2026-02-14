@@ -1,6 +1,6 @@
-package com.example.peakly.domain.focus.entity;
+package com.example.peakly.domain.focusSession.entity;
 
-import com.example.peakly.domain.focus.command.FocusSessionStartCommand;
+import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -106,9 +106,9 @@ public class FocusSession extends BaseEntity {
         if (cmd.startedAt() == null) throw new IllegalArgumentException("startedAt은 필수입니다.");
         if (cmd.baseDate() == null) throw new IllegalArgumentException("baseDate는 필수입니다.");
 
-        if (cmd.goalDurationSec() < 0) throw new IllegalArgumentException("goalDurationSec는 0 이상이어야 합니다.");
-        if (cmd.fatigueLevel() < 0 || cmd.fatigueLevel() > 2)
-            throw new IllegalArgumentException("fatigueLevel은 0~2 범위여야 합니다.");
+        if (cmd.goalDurationSec() <= 0) throw new IllegalArgumentException("goalDurationSec는 0보다 커야 합니다.");
+        if (cmd.fatigueLevel() < 1 || cmd.fatigueLevel() > 5)
+            throw new IllegalArgumentException("fatigueLevel은 1~5 범위여야 합니다.");
         if (cmd.caffeineIntakeLevel() < 0 || cmd.caffeineIntakeLevel() > 2)
             throw new IllegalArgumentException("caffeineIntakeLevel은 0~2 범위여야 합니다.");
         if (cmd.noiseLevel() < 0 || cmd.noiseLevel() > 2)
