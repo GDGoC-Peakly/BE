@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor
-public enum DailySleepErrorCode implements BaseErrorCode {
+public enum DailySleepErrorStatus implements BaseErrorCode {
     SLEEP_ALREADY_EXISTS(HttpStatus.CONFLICT, "SLEEP409_001", "오늘의 수면 기록이 이미 존재합니다. 수정을 이용해주세요."),
     SLEEP_NOT_FOUND(HttpStatus.NOT_FOUND, "SLEEP404_002", "해당 날짜의 수면 기록을 찾을 수 없습니다."),
     INVALID_OPERATION_TIME(HttpStatus.FORBIDDEN, "SLEEP403_003", "데이터 마감 시간(04:55~05:00)에는 등록 및 수정이 불가능합니다.")
