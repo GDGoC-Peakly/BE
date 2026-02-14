@@ -50,7 +50,7 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public DailySleepLogResponse getSleepLog(Long userId, LocalDate baseDate){
 
         User user = userRepository.findById(userId)
