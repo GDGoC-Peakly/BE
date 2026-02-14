@@ -14,7 +14,6 @@ import com.example.peakly.domain.category.repository.CategoryRepository;
 import com.example.peakly.domain.category.repository.MajorCategoryRepository;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
-import com.example.peakly.global.apiPayload.code.status.CategoryErrorCode;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -46,7 +45,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public MajorCategoryItemDto getMajorCategory(Long majorCategoryId) {
         MajorCategory major = majorCategoryRepository.findById(require(majorCategoryId))
-                .orElseThrow(() -> new GeneralException(CategoryErrorCode.MAJOR_CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(CategoryErrorStatus.MAJOR_CATEGORY_NOT_FOUND));
         return MajorCategoryConverter.toItemDto(major);
     }
 
@@ -67,18 +66,18 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CreateCustomTagsResponse createCustomTags(Long userId, CreateCustomTagsRequest request) {
         require(userId);
-        if (request == null) throw new GeneralException(CategoryErrorCode.INVALID_TAG_NAMES);
+        if (request == null) throw new GeneralException(CategoryErrorStatus.INVALID_TAG_NAMES);
 
         Long majorCategoryId = request.majorCategoryId();
-        if (majorCategoryId == null) throw new GeneralException(CategoryErrorCode.MAJOR_CATEGORY_NOT_FOUND);
+        if (majorCategoryId == null) throw new GeneralException(CategoryErrorStatus.MAJOR_CATEGORY_NOT_FOUND);
 
         MajorCategory major = majorCategoryRepository.findById(majorCategoryId)
-                .orElseThrow(() -> new GeneralException(CategoryErrorCode.MAJOR_CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(CategoryErrorStatus.MAJOR_CATEGORY_NOT_FOUND));
 
         // names 정규화
         List<String> normalized = normalizeNames(request.names());
         if (normalized.isEmpty()) {
-            throw new GeneralException(CategoryErrorCode.INVALID_TAG_NAMES);
+            throw new GeneralException(CategoryErrorStatus.INVALID_TAG_NAMES);
         }
 
         // 이미 존재하는 태그 제외
@@ -108,7 +107,7 @@ public class CategoryServiceImpl implements CategoryService {
                 saved = categoryRepository.saveAll(entities);
             } catch (DataIntegrityViolationException e) {
                 // 동시성 등으로 유니크 충돌 가능
-                throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_NAME_DUPLICATE);
+                throw new GeneralException(CategoryErrorStatus.CUSTOM_TAG_NAME_DUPLICATE);
             }
         }
 
@@ -127,14 +126,14 @@ public class CategoryServiceImpl implements CategoryService {
     public Void updateCustomTag(Long userId, Long customTagId, UpdateCustomTagRequest request) {
         require(userId);
         require(customTagId);
-        if (request == null) throw new GeneralException(CategoryErrorCode.INVALID_TAG_NAMES);
+        if (request == null) throw new GeneralException(CategoryErrorStatus.INVALID_TAG_NAMES);
 
         Category category = categoryRepository.findById(customTagId)
-                .orElseThrow(() -> new GeneralException(CategoryErrorCode.CUSTOM_TAG_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(CategoryErrorStatus.CUSTOM_TAG_NOT_FOUND));
 
         // 소유권 체크
         if (category.getUser() == null || !Objects.equals(category.getUser().getId(), userId)) {
-            throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_FORBIDDEN);
+            throw new GeneralException(CategoryErrorStatus.CUSTOM_TAG_FORBIDDEN);
         }
 
         // name 변경
@@ -144,7 +143,7 @@ public class CategoryServiceImpl implements CategoryService {
 
             if (!newName.equals(category.getName())
                     && categoryRepository.existsMyByMajorAndName(userId, majorCategoryId, newName)) {
-                throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_NAME_DUPLICATE);
+                throw new GeneralException(CategoryErrorStatus.CUSTOM_TAG_NAME_DUPLICATE);
             }
 
             category.updateName(newName);
@@ -166,10 +165,10 @@ public class CategoryServiceImpl implements CategoryService {
         require(customTagId);
 
         Category category = categoryRepository.findById(customTagId)
-                .orElseThrow(() -> new GeneralException(CategoryErrorCode.CUSTOM_TAG_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(CategoryErrorStatus.CUSTOM_TAG_NOT_FOUND));
 
         if (category.getUser() == null || !Objects.equals(category.getUser().getId(), userId)) {
-            throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_FORBIDDEN);
+            throw new GeneralException(CategoryErrorStatus.CUSTOM_TAG_FORBIDDEN);
         }
 
         categoryRepository.delete(category);
@@ -179,7 +178,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public List<MajorWithCustomTagsResponse> getAllMajorWithMyCustomTags(Long userId) {
-        if (userId == null) throw new GeneralException(CategoryErrorCode.CUSTOM_TAG_FORBIDDEN);
+        if (userId == null) throw new GeneralException(CategoryErrorStatus.CUSTOM_TAG_FORBIDDEN);
 
         List<MajorCategory> majors = majorCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
 
@@ -206,7 +205,7 @@ public class CategoryServiceImpl implements CategoryService {
 
 
     private static Long require(Long value) {
-        if (value == null) throw new GeneralException(CategoryErrorCode.REQUIRED_FIELD_MISSING);
+        if (value == null) throw new GeneralException(CategoryErrorStatus.REQUIRED_FIELD_MISSING);
         return value;
     }
 

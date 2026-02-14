@@ -7,7 +7,7 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
-public enum CategoryErrorCode implements BaseErrorCode {
+public enum CategoryErrorStatus implements BaseErrorCode {
     MAJOR_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CATEGORY404_001", "대분류를 찾을 수 없습니다."),
     CUSTOM_TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "CATEGORY404_002", "커스텀 태그를 찾을 수 없습니다."),
     CUSTOM_TAG_FORBIDDEN(HttpStatus.FORBIDDEN, "CATEGORY403_003", "해당 커스텀 태그에 대한 권한이 없습니다."),
