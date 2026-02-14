@@ -14,6 +14,7 @@ import com.example.peakly.domain.category.repository.CategoryRepository;
 import com.example.peakly.domain.category.repository.MajorCategoryRepository;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
+import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

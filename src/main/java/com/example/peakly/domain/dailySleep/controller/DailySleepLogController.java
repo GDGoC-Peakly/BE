@@ -6,6 +6,7 @@ import com.example.peakly.domain.dailySleep.dto.response.DailySleepLogResponse;
 import com.example.peakly.domain.dailySleep.service.DailySleepLogService;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.apiPayload.ApiResponse;
+import com.example.peakly.global.security.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,9 +31,9 @@ public class DailySleepLogController {
     )
     @PostMapping
     public ApiResponse<DailySleepLogResponse> saveSleepLog(
-            @AuthenticationPrincipal Long userId,
             @RequestBody @Valid DailySleepLogRequest request) {
 
+        Long userId = SecurityUtil.requireUserId();
         DailySleepLogResponse response = sleepLogService.saveSleepLog(userId, request);
 
         return ApiResponse.onSuccess(response);
@@ -44,9 +45,9 @@ public class DailySleepLogController {
     )
     @GetMapping("/{baseDate}")
     public ApiResponse<DailySleepLogResponse> getSleepLog(
-            @AuthenticationPrincipal Long userId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baseDate) {
 
+        Long userId = SecurityUtil.requireUserId();
         DailySleepLogResponse response = sleepLogService.getSleepLog(userId, baseDate);
         return ApiResponse.onSuccess(response);
     }
@@ -57,10 +58,10 @@ public class DailySleepLogController {
     )
     @PatchMapping("/{baseDate}")
     public ApiResponse<DailySleepLogResponse> updateSleepLog(
-            @AuthenticationPrincipal Long userId,
             @RequestBody @Valid SleepLogUpdateByTimeRequest request,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baseDate
             ){
+        Long userId = SecurityUtil.requireUserId();
         DailySleepLogResponse response = sleepLogService.updateSleepLog(userId, request, baseDate);
         return ApiResponse.onSuccess(response);
     }
