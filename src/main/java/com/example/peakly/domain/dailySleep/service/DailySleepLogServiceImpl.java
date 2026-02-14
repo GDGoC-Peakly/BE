@@ -36,6 +36,9 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
 
         LocalDate baseDate = LocalDate.now();
+        if (LocalTime.now().isBefore(LocalTime.of(5, 0))) {
+            baseDate = baseDate.minusDays(1);
+        }
 
         if (sleepLogRepository.findByUserAndBaseDate(user, baseDate).isPresent()) {
             throw new GeneralException(DailySleepErrorCode.SLEEP_ALREADY_EXISTS);
