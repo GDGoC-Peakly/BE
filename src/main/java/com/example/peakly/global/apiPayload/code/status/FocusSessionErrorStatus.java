@@ -26,12 +26,6 @@ public enum FocusSessionErrorStatus implements BaseErrorCode {
             "시간 값이 올바르지 않습니다."
     ),
 
-    CATEGORY_MAJOR_MISMATCH(
-            HttpStatus.BAD_REQUEST,
-            "SESSION400_003",
-            "카테고리의 대분류가 일치하지 않습니다."
-    ),
-
     // =========================
     // 401 UNAUTHORIZED
     // =========================
@@ -52,12 +46,6 @@ public enum FocusSessionErrorStatus implements BaseErrorCode {
             "세션에 대한 접근 권한이 없습니다."
     ),
 
-    CATEGORY_FORBIDDEN(
-            HttpStatus.FORBIDDEN,
-            "SESSION403_002",
-            "해당 카테고리에 대한 권한이 없습니다."
-    ),
-
     // =========================
     // 404 NOT_FOUND
     // =========================
@@ -66,18 +54,6 @@ public enum FocusSessionErrorStatus implements BaseErrorCode {
             HttpStatus.NOT_FOUND,
             "SESSION404_001",
             "세션을 찾을 수 없습니다."
-    ),
-
-    MAJOR_CATEGORY_NOT_FOUND(
-            HttpStatus.NOT_FOUND,
-            "SESSION404_002",
-            "대분류를 찾을 수 없습니다."
-    ),
-
-    CATEGORY_NOT_FOUND(
-            HttpStatus.NOT_FOUND,
-            "SESSION404_003",
-            "카테고리를 찾을 수 없습니다."
     ),
 
     // =========================

@@ -12,7 +12,9 @@ import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
+import com.example.peakly.global.apiPayload.code.status.CategoryErrorCode;
 import com.example.peakly.global.apiPayload.code.status.FocusSessionErrorStatus;
+import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,7 +37,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
     @Transactional
     public FocusSessionStartResponse start(Long userId, FocusSessionStartRequest req) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.CATEGORY_FORBIDDEN)); // ← 유저 not found 코드가 따로 있으면 그걸로 교체 권장
+                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
 
         boolean exists = focusSessionRepository.existsByUser_IdAndSessionStatusIn(
                 userId,
@@ -46,19 +48,19 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         }
 
         MajorCategory major = majorCategoryRepository.findById(req.majorCategoryId())
-                .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(CategoryErrorCode.MAJOR_CATEGORY_NOT_FOUND));
 
         if (req.categoryId() != null) {
             Category category = categoryRepository.findByIdAndUser_Id(req.categoryId(), userId)
-                    .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.CATEGORY_NOT_FOUND));
+                    .orElseThrow(() -> new GeneralException(CategoryErrorCode.CATEGORY_NOT_FOUND));
 
             Long categoryMajorId = category.getMajorCategory().getId();
             if (!categoryMajorId.equals(major.getId())) {
-                throw new GeneralException(FocusSessionErrorStatus.CATEGORY_MAJOR_MISMATCH);
+                throw new GeneralException(CategoryErrorCode.CATEGORY_MAJOR_MISMATCH);
             }
         }
 
-        LocalDateTime startedAt = LocalDateTime.now(); // NOW(3) 정밀도는 DB 저장 시 맞춰짐
+        LocalDateTime startedAt = LocalDateTime.now();
         LocalDate baseDate = calcBaseDate(startedAt);
 
         FocusSessionStartCommand cmd = new FocusSessionStartCommand(

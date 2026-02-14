@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record FocusSessionEndRequest(
         @NotNull Boolean isRecorded,
-        @Min(0) Integer clientTotalFocusTimeSec
+        @NotNull @Min(0) Integer clientTotalFocusTimeSec
 ) {
 }
