@@ -8,7 +8,7 @@ public record DailySleepLogResponse(
         LocalDate baseDate,
         LocalTime bedTime,
         LocalTime wakeTime,
-        Integer sleepScore,
+        Float sleepScore,
         String durationDisplay
 ) {
 }

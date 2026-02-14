@@ -63,7 +63,7 @@ public class DailySleepLog extends BaseEntity {
     @Min(1)
     @Max(5)
     @Column(name = "sleep_score", nullable = false)
-    private Integer sleepScore;
+    private Float sleepScore;
 
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -71,7 +71,7 @@ public class DailySleepLog extends BaseEntity {
     private User user;
 
     // 수정 메서드 추가
-    public void updateLog(LocalTime bedTime, LocalTime wakeTime, Integer duration, Integer sleepScore) {
+    public void updateLog(LocalTime bedTime, LocalTime wakeTime, Integer duration, Float sleepScore) {
         this.bedTime = bedTime;
         this.wakeTime = wakeTime;
         this.sleepDurationMin = duration;

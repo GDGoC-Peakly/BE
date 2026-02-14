@@ -18,5 +18,5 @@ public record DailySleepLogRequest(
         @NotNull(message = "수면의 질을 체크해주세요")
         @Min(value = 1, message = "수면 점수는 1 이상이어야 합니다")
         @Max(value = 5, message = "수면 점수는 5 이하여야 합니다")
-        Integer sleepScore
+        Float sleepScore
         ) {}
