@@ -60,7 +60,7 @@ public class DailySleepLog extends BaseEntity {
 
     // 수면 점수
     @NotNull
-    @Min(0)
+    @Min(1)
     @Max(5)
     @Column(name = "sleep_score", nullable = false)
     private Integer sleepScore;
