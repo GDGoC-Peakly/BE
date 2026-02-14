@@ -8,6 +8,7 @@ import com.example.peakly.domain.category.dto.response.MajorCategoryItemDto;
 import com.example.peakly.domain.category.dto.response.MajorWithCustomTagsResponse;
 import com.example.peakly.domain.category.service.CategoryService;
 import com.example.peakly.global.apiPayload.ApiResponse;
+import com.example.peakly.global.security.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,7 +26,6 @@ import static com.example.peakly.global.security.SecurityUtil.currentUserId;
 public class CategoryController {
 
     private final CategoryService categoryService;
-    Long userId = currentUserId();
 
     // 대분류만 조회
     @Operation(
@@ -46,7 +46,7 @@ public class CategoryController {
     )
     @GetMapping("/major/{majorCategoryId}")
     public ApiResponse<MajorWithCustomTagsResponse> getMajorWithCustomTags(@PathVariable Long majorCategoryId) {
-        Long userId = currentUserId();
+        Long userId = SecurityUtil.requireUserId();
 
         MajorCategoryItemDto major = categoryService.getMajorCategory(majorCategoryId);
         List<CustomTagItemDto> customTags = categoryService.getCustomTags(userId, majorCategoryId);
@@ -64,7 +64,7 @@ public class CategoryController {
     @GetMapping("/custom/{majorCategoryId}")
     public ApiResponse<List<CustomTagItemDto>> getCustomTags(@PathVariable Long majorCategoryId)
     {
-        Long userId = currentUserId();
+        Long userId = SecurityUtil.requireUserId();
 
         List<CustomTagItemDto> customTags = categoryService.getCustomTags(userId, majorCategoryId);
         return ApiResponse.onSuccess(customTags);
@@ -78,7 +78,7 @@ public class CategoryController {
     )
     @PostMapping("/custom")
     public ApiResponse<CreateCustomTagsResponse> createCustomTags(@Valid @RequestBody CreateCustomTagsRequest request) {
-        Long userId = currentUserId();
+        Long userId = SecurityUtil.requireUserId();
 
         CreateCustomTagsResponse createCustom = categoryService.createCustomTags(userId, request);
         return ApiResponse.onSuccess(createCustom);
@@ -93,7 +93,7 @@ public class CategoryController {
     @PatchMapping("/custom/{customTagId}")
     public ApiResponse<String> updateCustomTag(@Valid @PathVariable Long customTagId, @RequestBody UpdateCustomTagRequest request
     ) {
-        Long userId = currentUserId();
+        Long userId = SecurityUtil.requireUserId();
 
         categoryService.updateCustomTag(userId, customTagId, request);
         return ApiResponse.onSuccess("수정되었습니다.");
@@ -107,15 +107,19 @@ public class CategoryController {
     )
     @DeleteMapping("/custom/{customTagId}")
     public ApiResponse<String> deleteCustomTag(@PathVariable Long customTagId) {
-        Long userId = currentUserId();
+        Long userId = SecurityUtil.requireUserId();
 
         categoryService.deleteCustomTag(userId, customTagId);
         return ApiResponse.onSuccess("삭제되었습니다.");
     }
 
+    @Operation(
+            summary = "모든 대분류 + 커스텀 태그 목록 조회",
+            description = "모든 대분류 정보와, 해당 대분류에 속한 커스텀 태그 목록을 함께 조회합니다."
+    )
     @GetMapping("/all")
     public ApiResponse<List<MajorWithCustomTagsResponse>> getAllMajorWithMyCustomTags() {
-        Long userId = currentUserId();
+        Long userId = SecurityUtil.requireUserId();
 
         List<MajorWithCustomTagsResponse> response = categoryService.getAllMajorWithMyCustomTags(userId);
         return ApiResponse.onSuccess(response);
