@@ -113,6 +113,10 @@ public class CategoryController {
         return ApiResponse.onSuccess("삭제되었습니다.");
     }
 
+    @Operation(
+            summary = "모든 대분류 + 커스텀 태그 목록 조회",
+            description = "모든 대분류 정보와, 해당 대분류에 속한 커스텀 태그 목록을 함께 조회합니다."
+    )
     @GetMapping("/all")
     public ApiResponse<List<MajorWithCustomTagsResponse>> getAllMajorWithMyCustomTags() {
         Long userId = currentUserId();
