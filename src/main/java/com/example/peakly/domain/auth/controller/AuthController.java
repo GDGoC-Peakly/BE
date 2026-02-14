@@ -48,7 +48,7 @@ public class AuthController {
         return ApiResponse.onSuccess(authService.sendEmailVerify(req));
     }
 
-    @PostMapping("/email-verify")
+    @GetMapping("/email-verify")
     public ApiResponse<EmailVerifyResponse> verifyEmail(
             @RequestParam("token")
             @NotBlank(message = "토큰 값이 필요합니다.")
