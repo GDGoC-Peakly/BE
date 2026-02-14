@@ -22,7 +22,7 @@ import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
-public class DailySleepLogServiceImpl implements DailySleepLogService{
+public class DailySleepLogServiceImpl implements DailySleepLogService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final LocalTime BASE_DATE_CUTOFF = LocalTime.of(5, 0);
@@ -34,7 +34,7 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
 
     @Override
     @Transactional
-    public DailySleepLogResponse saveSleepLog(Long userId, DailySleepLogRequest request){
+    public DailySleepLogResponse saveSleepLog(Long userId, DailySleepLogRequest request) {
 
         LocalDateTime now = LocalDateTime.now(KST);
         validateOperationTime(now.toLocalTime());
@@ -43,10 +43,6 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
 
         LocalDate baseDate = resolveBaseDate(now);
-
-        if (LocalTime.now().isBefore(LocalTime.of(5, 0))) {
-            baseDate = baseDate.minusDays(1);
-        }
 
         if (sleepLogRepository.findByUserAndBaseDate(user, baseDate).isPresent()) {
             throw new GeneralException(DailySleepErrorStatus.SLEEP_ALREADY_EXISTS);
@@ -59,7 +55,7 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
 
     @Override
     @Transactional(readOnly = true)
-    public DailySleepLogResponse getSleepLog(Long userId, LocalDate baseDate){
+    public DailySleepLogResponse getSleepLog(Long userId, LocalDate baseDate) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
@@ -75,10 +71,13 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
     public DailySleepLogResponse updateSleepLog(
             Long userId,
             SleepLogUpdateByTimeRequest request,
-            LocalDate baseDate){
+            LocalDate baseDate) {
 
         LocalDateTime now = LocalDateTime.now(KST);
-        validateOperationTime(now.toLocalTime());
+        LocalTime nowTime = now.toLocalTime();
+
+        validateOperationTime(nowTime);
+        validateUpdatableBaseDate(baseDate, now);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
@@ -87,7 +86,6 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
                 .orElseThrow(() -> new GeneralException(DailySleepErrorStatus.SLEEP_NOT_FOUND));
 
         sleepConverter.updateEntity(sleepLog, request);
-
         return sleepConverter.toResponse(sleepLog);
     }
 
@@ -102,6 +100,14 @@ public class DailySleepLogServiceImpl implements DailySleepLogService{
     private void validateOperationTime(LocalTime nowTime) {
         if (nowTime.isAfter(INVALID_START) && nowTime.isBefore(BASE_DATE_CUTOFF)) {
             throw new GeneralException(DailySleepErrorStatus.INVALID_OPERATION_TIME);
+        }
+    }
+
+    private void validateUpdatableBaseDate(LocalDate requestedBaseDate, LocalDateTime now) {
+        LocalDate updatableBaseDate = resolveBaseDate(now);
+
+        if (!requestedBaseDate.equals(updatableBaseDate)) {
+            throw new GeneralException(DailySleepErrorStatus.INVALID_UPDATE_DATE);
         }
     }
 }
