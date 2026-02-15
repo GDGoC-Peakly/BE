@@ -44,8 +44,12 @@ public class DailySleepLog extends BaseEntity {
     private LocalDate baseDate;
 
     @NotNull
+    @Column(name = "bed_time", nullable = false)
+    private LocalTime bedTime; //취침시간
+
+    @NotNull
     @Column(name = "wake_time", nullable = false)
-    private LocalTime wakeTime;
+    private LocalTime wakeTime; //기상시간
 
     // 수면 시간(분)
     @NotNull
@@ -56,13 +60,21 @@ public class DailySleepLog extends BaseEntity {
 
     // 수면 점수
     @NotNull
-    @Min(0)
+    @Min(1)
     @Max(5)
     @Column(name = "sleep_score", nullable = false)
-    private Integer sleepScore;
+    private Float sleepScore;
 
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // 수정 메서드 추가
+    public void updateLog(LocalTime bedTime, LocalTime wakeTime, Integer duration, Float sleepScore) {
+        this.bedTime = bedTime;
+        this.wakeTime = wakeTime;
+        this.sleepDurationMin = duration;
+        this.sleepScore = sleepScore;
+    }
 }

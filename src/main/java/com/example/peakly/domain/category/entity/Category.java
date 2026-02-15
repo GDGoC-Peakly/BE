@@ -1,7 +1,7 @@
 package com.example.peakly.domain.category.entity;
 
 import com.example.peakly.domain.user.entity.User;
-import com.example.peakly.global.apiPayload.code.status.CategoryErrorCode;
+import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -50,10 +50,10 @@ public class Category extends BaseEntity {
     public static Category create(User user, MajorCategory majorCategory, String name, int sortOrder) {
 
         if (majorCategory == null) {
-            throw new GeneralException(CategoryErrorCode.MAJOR_CATEGORY_ESSENTIAL);
+            throw new GeneralException(CategoryErrorStatus.MAJOR_CATEGORY_ESSENTIAL);
         }
         if ((name == null || name.isBlank())) {
-            throw new GeneralException(CategoryErrorCode.NAME_NOT_EXIST);
+            throw new GeneralException(CategoryErrorStatus.NAME_NOT_EXIST);
         }
 
         Category c = new Category();
@@ -66,7 +66,7 @@ public class Category extends BaseEntity {
 
     public void updateName(String name) {
         if ((name == null || name.isBlank())) {
-            throw new GeneralException(CategoryErrorCode.NAME_NOT_EXIST);
+            throw new GeneralException(CategoryErrorStatus.NAME_NOT_EXIST);
         }
         this.name = name;
     }
