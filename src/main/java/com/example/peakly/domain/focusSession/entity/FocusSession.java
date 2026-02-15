@@ -144,20 +144,6 @@ public class FocusSession extends BaseEntity {
         this.totalFocusSec += deltaSec;
     }
 
-    public void resume(LocalDateTime resumedAt, int pauseSec) {
-        if (resumedAt == null) throw new IllegalArgumentException("resumedAt은 필수입니다.");
-        if (pauseSec < 0) throw new IllegalArgumentException("pauseSec는 0 이상이어야 합니다.");
-        if (this.sessionStatus != SessionStatus.PAUSED) {
-            throw new IllegalStateException("PAUSED 상태에서만 재개가 가능합니다.");
-        }
-        if (pauses.isEmpty()) throw new IllegalStateException("pause 기록이 없습니다.");
-
-        SessionPause last = pauses.get(pauses.size() - 1);
-        last.resume(resumedAt, pauseSec);
-
-        this.sessionStatus = SessionStatus.RUNNING;
-    }
-
     public void markRunning() {
         this.sessionStatus = SessionStatus.RUNNING;
     }
@@ -167,12 +153,16 @@ public class FocusSession extends BaseEntity {
         if (totalFocusSec < 0) throw new IllegalArgumentException("totalFocusSec는 0 이상이어야 합니다.");
 
         if (this.sessionStatus == SessionStatus.ENDED || this.sessionStatus == SessionStatus.CANCELED) {
-            throw new IllegalStateException("이미 종료/취소된 세션입니다.");
+            throw new IllegalStateException("이미 종료 또는 취소된 세션입니다.");
         }
 
         this.endedAt = endedAt;
         this.totalFocusSec = totalFocusSec;
         this.sessionStatus = SessionStatus.ENDED;
+    }
+
+    public void markCountedInStats(boolean countedInStats) {
+        this.countedInStats = countedInStats;
     }
 
     public void cancel(LocalDateTime canceledAt) {

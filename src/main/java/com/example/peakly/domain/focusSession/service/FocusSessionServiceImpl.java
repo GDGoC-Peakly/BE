@@ -5,7 +5,9 @@ import com.example.peakly.domain.category.entity.MajorCategory;
 import com.example.peakly.domain.category.repository.CategoryRepository;
 import com.example.peakly.domain.category.repository.MajorCategoryRepository;
 import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
+import com.example.peakly.domain.focusSession.dto.request.FocusSessionEndRequest;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartRequest;
+import com.example.peakly.domain.focusSession.dto.response.FocusSessionEndResponse;
 import com.example.peakly.domain.focusSession.dto.response.FocusSessionPauseResponse;
 import com.example.peakly.domain.focusSession.dto.response.FocusSessionResumeResponse;
 import com.example.peakly.domain.focusSession.dto.response.FocusSessionStartResponse;
@@ -182,6 +184,73 @@ public class FocusSessionServiceImpl implements FocusSessionService {
                         open.getResumedAt(),
                         open.getPauseSec()
                 )
+        );
+    }
+
+    @Transactional
+    public FocusSessionEndResponse end(Long userId, Long sessionId, FocusSessionEndRequest req) {
+
+        FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
+                .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
+
+        if (session.getSessionStatus() == SessionStatus.ENDED || session.getSessionStatus() == SessionStatus.CANCELED) {
+            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+
+        LocalDateTime endedAt = LocalDateTime.now();
+
+        if (session.getSessionStatus() == SessionStatus.RUNNING) {
+
+            if (sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId)) {
+                throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+            }
+
+            LocalDateTime lastRunningStartedAt = sessionPauseRepository
+                    .findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId)
+                    .map(SessionPause::getResumedAt)
+                    .orElse(session.getStartedAt());
+
+            long deltaSec = Duration.between(lastRunningStartedAt, endedAt).getSeconds();
+            if (deltaSec < 0) throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+
+            session.addFocusSec((int) deltaSec);
+            session.end(endedAt, session.getTotalFocusSec());
+
+        } else if (session.getSessionStatus() == SessionStatus.PAUSED) {
+
+            List<SessionPause> openPauses =
+                    sessionPauseRepository.findAllByFocusSession_IdAndResumedAtIsNull(sessionId);
+
+            if (openPauses.size() != 1) {
+                throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+            }
+
+            SessionPause open = openPauses.get(0);
+
+            long pauseSecLong = Duration.between(open.getPausedAt(), endedAt).getSeconds();
+            if (pauseSecLong < 0) throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+
+            open.resume(endedAt, (int) pauseSecLong);
+
+            session.end(endedAt, session.getTotalFocusSec());
+
+        } else {
+            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+
+        int finalFocusSec = session.getTotalFocusSec();
+
+        session.markCountedInStats(finalFocusSec >= 300);
+
+        return new FocusSessionEndResponse(
+                session.getId(),
+                session.getSessionStatus().name(),
+                session.getStartedAt(),
+                session.getEndedAt(),
+                session.getTotalFocusSec(),
+                session.getGoalDurationSec(),
+                req.isRecorded(),
+                session.isCountedInStats()
         );
     }
 }
