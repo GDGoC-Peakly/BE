@@ -40,7 +40,7 @@ public class DailySleepLogServiceImpl implements DailySleepLogService {
         validateOperationTime(now.toLocalTime());
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
+                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
 
         LocalDate baseDate = resolveBaseDate(now);
 
@@ -58,7 +58,7 @@ public class DailySleepLogServiceImpl implements DailySleepLogService {
     public DailySleepLogResponse getSleepLog(Long userId, LocalDate baseDate) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
+                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
 
         DailySleepLog sleepLog = sleepLogRepository.findByUserAndBaseDate(user, baseDate)
                 .orElseThrow(() -> new GeneralException(DailySleepErrorStatus.SLEEP_NOT_FOUND));
@@ -80,7 +80,7 @@ public class DailySleepLogServiceImpl implements DailySleepLogService {
         validateUpdatableBaseDate(baseDate, now);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_404_001));
+                .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
 
         DailySleepLog sleepLog = sleepLogRepository.findByUserAndBaseDate(user, baseDate)
                 .orElseThrow(() -> new GeneralException(DailySleepErrorStatus.SLEEP_NOT_FOUND));
