@@ -106,43 +106,33 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
                 .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
 
-        if (session.getSessionStatus() == SessionStatus.PAUSED) {
-            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
-        }
-        if (session.getSessionStatus() == SessionStatus.ENDED || session.getSessionStatus() == SessionStatus.CANCELED) {
-            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
-        }
         if (session.getSessionStatus() != SessionStatus.RUNNING) {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
         }
 
-        boolean hasOpenPause = sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId);
-        if (hasOpenPause) {
+        if (sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId)) {
             throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
         }
 
         LocalDateTime pausedAt = LocalDateTime.now();
 
-        LocalDateTime lastResumedAt = sessionPauseRepository.findTopByFocusSession_IdOrderByPausedAtDesc(sessionId)
+        LocalDateTime lastRunningStartedAt = sessionPauseRepository
+                .findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId)
                 .map(SessionPause::getResumedAt)
-                .filter(r -> r != null)
                 .orElse(session.getStartedAt());
 
-        long deltaSec = Duration.between(lastResumedAt, pausedAt).getSeconds();
-        if (deltaSec < 0) {
-            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
-        }
+        long deltaSec = Duration.between(lastRunningStartedAt, pausedAt).getSeconds();
+        if (deltaSec < 0) throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
 
         session.addFocusSec((int) deltaSec);
 
         session.pause(pausedAt);
-        FocusSession saved = focusSessionRepository.save(session);
 
-        SessionPause created = saved.getPauses().get(saved.getPauses().size() - 1);
+        SessionPause created = session.getPauses().get(session.getPauses().size() - 1);
 
         return new FocusSessionPauseResponse(
-                saved.getId(),
-                saved.getSessionStatus().name(),
+                session.getId(),
+                session.getSessionStatus().name(),
                 new FocusSessionPauseResponse.PauseDTO(
                         created.getId(),
                         created.getPausedAt()

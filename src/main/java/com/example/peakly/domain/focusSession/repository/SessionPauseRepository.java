@@ -12,7 +12,8 @@ public interface SessionPauseRepository extends JpaRepository<SessionPause, Long
 
     boolean existsByFocusSession_IdAndResumedAtIsNull(Long sessionId);
 
-    Optional<SessionPause> findTopByFocusSession_IdOrderByPausedAtDesc(Long sessionId);
+    Optional<SessionPause> findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(Long sessionId);
+
 
     List<SessionPause> findAllByFocusSession_IdAndResumedAtIsNull(Long sessionId);
 }
