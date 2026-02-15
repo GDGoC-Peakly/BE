@@ -12,7 +12,7 @@ import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
-import com.example.peakly.global.apiPayload.code.status.CategoryErrorCode;
+import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
 import com.example.peakly.global.apiPayload.code.status.FocusSessionErrorStatus;
 import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
@@ -48,15 +48,15 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         }
 
         MajorCategory major = majorCategoryRepository.findById(req.majorCategoryId())
-                .orElseThrow(() -> new GeneralException(CategoryErrorCode.MAJOR_CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(CategoryErrorStatus.MAJOR_CATEGORY_NOT_FOUND));
 
         if (req.categoryId() != null) {
             Category category = categoryRepository.findByIdAndUser_Id(req.categoryId(), userId)
-                    .orElseThrow(() -> new GeneralException(CategoryErrorCode.CATEGORY_NOT_FOUND));
+                    .orElseThrow(() -> new GeneralException(CategoryErrorStatus.CATEGORY_NOT_FOUND));
 
             Long categoryMajorId = category.getMajorCategory().getId();
             if (!categoryMajorId.equals(major.getId())) {
-                throw new GeneralException(CategoryErrorCode.CATEGORY_MAJOR_MISMATCH);
+                throw new GeneralException(CategoryErrorStatus.CATEGORY_MAJOR_MISMATCH);
             }
         }
 
