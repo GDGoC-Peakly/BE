@@ -50,8 +50,7 @@ public class FocusSessionController {
             @Valid @RequestBody FocusSessionEndRequest req
     ) {
         Long userId = SecurityUtil.requireUserId();
-//        FocusSessionEndResponse res = focusSessionService.end(userId, sessionId, req);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(focusSessionService.end(userId, sessionId, req));
     }
 
 }
