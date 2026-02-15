@@ -3,7 +3,6 @@ package com.example.peakly.domain.dailySleep.service;
 import com.example.peakly.domain.dailySleep.dto.request.DailySleepLogRequest;
 import com.example.peakly.domain.dailySleep.dto.request.SleepLogUpdateByTimeRequest;
 import com.example.peakly.domain.dailySleep.dto.response.DailySleepLogResponse;
-import com.example.peakly.domain.user.entity.User;
 
 import java.time.LocalDate;
 

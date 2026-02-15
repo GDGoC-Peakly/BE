@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.example.peakly.global.security.SecurityUtil.currentUserId;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/categories")
