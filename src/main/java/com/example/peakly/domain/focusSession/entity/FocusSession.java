@@ -139,6 +139,11 @@ public class FocusSession extends BaseEntity {
         this.pauses.add(SessionPause.create(this, pausedAt));
     }
 
+    public void addFocusSec(int deltaSec) {
+        if (deltaSec < 0) throw new IllegalArgumentException("deltaSec는 0 이상이어야 합니다.");
+        this.totalFocusSec += deltaSec;
+    }
+
     public void resume(LocalDateTime resumedAt, int pauseSec) {
         if (resumedAt == null) throw new IllegalArgumentException("resumedAt은 필수입니다.");
         if (pauseSec < 0) throw new IllegalArgumentException("pauseSec는 0 이상이어야 합니다.");

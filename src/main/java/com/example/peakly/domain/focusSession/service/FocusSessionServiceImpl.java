@@ -6,10 +6,13 @@ import com.example.peakly.domain.category.repository.CategoryRepository;
 import com.example.peakly.domain.category.repository.MajorCategoryRepository;
 import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartRequest;
+import com.example.peakly.domain.focusSession.dto.response.FocusSessionPauseResponse;
 import com.example.peakly.domain.focusSession.dto.response.FocusSessionStartResponse;
 import com.example.peakly.domain.focusSession.entity.FocusSession;
+import com.example.peakly.domain.focusSession.entity.SessionPause;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
+import com.example.peakly.domain.focusSession.repository.SessionPauseRepository;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
@@ -20,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -33,6 +37,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
     private final UserRepository userRepository;
     private final MajorCategoryRepository majorCategoryRepository;
     private final CategoryRepository categoryRepository;
+    private final SessionPauseRepository sessionPauseRepository;
 
     @Transactional
     public FocusSessionStartResponse start(Long userId, FocusSessionStartRequest req) {
@@ -93,5 +98,54 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             return startedAt.toLocalDate().minusDays(1);
         }
         return startedAt.toLocalDate();
+    }
+
+    @Transactional
+    public FocusSessionPauseResponse pause(Long userId, Long sessionId) {
+        FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
+                .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
+
+        if (session.getSessionStatus() == SessionStatus.PAUSED) {
+            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+        if (session.getSessionStatus() == SessionStatus.ENDED || session.getSessionStatus() == SessionStatus.CANCELED) {
+            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+        if (session.getSessionStatus() != SessionStatus.RUNNING) {
+            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+
+        boolean hasOpenPause = sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId);
+        if (hasOpenPause) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+
+        LocalDateTime pausedAt = LocalDateTime.now();
+
+        LocalDateTime lastResumedAt = sessionPauseRepository.findTopByFocusSession_IdOrderByPausedAtDesc(sessionId)
+                .map(SessionPause::getResumedAt)
+                .filter(r -> r != null)
+                .orElse(session.getStartedAt());
+
+        long deltaSec = Duration.between(lastResumedAt, pausedAt).getSeconds();
+        if (deltaSec < 0) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+
+        session.addFocusSec((int) deltaSec);
+
+        session.pause(pausedAt);
+        FocusSession saved = focusSessionRepository.save(session);
+
+        SessionPause created = saved.getPauses().get(saved.getPauses().size() - 1);
+
+        return new FocusSessionPauseResponse(
+                saved.getId(),
+                saved.getSessionStatus().name(),
+                new FocusSessionPauseResponse.PauseDTO(
+                        created.getId(),
+                        created.getPausedAt()
+                )
+        );
     }
 }
