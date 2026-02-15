@@ -1,4 +1,4 @@
-package com.example.peakly.domain.focus.entity;
+package com.example.peakly.domain.focusSession.entity;
 
 public enum SessionStatus {
     RUNNING,

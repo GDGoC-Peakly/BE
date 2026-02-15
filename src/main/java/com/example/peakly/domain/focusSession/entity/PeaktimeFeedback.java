@@ -1,6 +1,6 @@
-package com.example.peakly.domain.focus.entity;
+package com.example.peakly.domain.focusSession.entity;
 
-import com.example.peakly.domain.focus.command.PeaktimeFeedbackCreateCommand;
+import com.example.peakly.domain.focusSession.command.PeaktimeFeedbackCreateCommand;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

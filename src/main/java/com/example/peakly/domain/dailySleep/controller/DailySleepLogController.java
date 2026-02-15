@@ -4,7 +4,6 @@ import com.example.peakly.domain.dailySleep.dto.request.DailySleepLogRequest;
 import com.example.peakly.domain.dailySleep.dto.request.SleepLogUpdateByTimeRequest;
 import com.example.peakly.domain.dailySleep.dto.response.DailySleepLogResponse;
 import com.example.peakly.domain.dailySleep.service.DailySleepLogService;
-import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import com.example.peakly.global.security.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;

@@ -1,6 +1,6 @@
-package com.example.peakly.domain.focus.entity;
+package com.example.peakly.domain.focusSession.entity;
 
-import com.example.peakly.domain.focus.command.FocusSessionStartCommand;
+import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -78,19 +78,27 @@ public class FocusSession extends BaseEntity {
     @OneToOne(mappedBy = "focusSession", fetch = FetchType.LAZY)
     private PeaktimeFeedback peaktimeFeedback;
 
-    public static FocusSession start(User user, FocusSessionStartCommand cmd) {
-        validateStart(user, cmd);
+    public static FocusSession start(
+            User user,
+            FocusSessionStartCommand cmd,
+            LocalDateTime startedAt,
+            LocalDate baseDate
+    ) {
+        validateStart(user, cmd, startedAt, baseDate);
 
         FocusSession s = new FocusSession();
         s.user = user;
+
         s.majorCategoryId = cmd.majorCategoryId();
         s.categoryId = cmd.categoryId();
-        s.startedAt = cmd.startedAt();
+
+        s.startedAt = startedAt;
+        s.baseDate = baseDate;
+
         s.goalDurationSec = cmd.goalDurationSec();
         s.fatigueLevel = (byte) cmd.fatigueLevel();
         s.caffeineIntakeLevel = (byte) cmd.caffeineIntakeLevel();
         s.noiseLevel = (byte) cmd.noiseLevel();
-        s.baseDate = cmd.baseDate();
 
         s.sessionStatus = SessionStatus.RUNNING;
         s.totalFocusSec = 0;
@@ -98,17 +106,24 @@ public class FocusSession extends BaseEntity {
         return s;
     }
 
-    private static void validateStart(User user, FocusSessionStartCommand cmd) {
+    private static void validateStart(
+            User user,
+            FocusSessionStartCommand cmd,
+            LocalDateTime startedAt,
+            LocalDate baseDate
+    ) {
         if (user == null) throw new IllegalArgumentException("user는 필수입니다.");
         if (cmd == null) throw new IllegalArgumentException("cmd는 필수입니다.");
 
         if (cmd.majorCategoryId() == null) throw new IllegalArgumentException("majorCategoryId는 필수입니다.");
-        if (cmd.startedAt() == null) throw new IllegalArgumentException("startedAt은 필수입니다.");
-        if (cmd.baseDate() == null) throw new IllegalArgumentException("baseDate는 필수입니다.");
+        if (startedAt == null) throw new IllegalArgumentException("startedAt은 필수입니다.");
+        if (baseDate == null) throw new IllegalArgumentException("baseDate는 필수입니다.");
 
-        if (cmd.goalDurationSec() < 0) throw new IllegalArgumentException("goalDurationSec는 0 이상이어야 합니다.");
-        if (cmd.fatigueLevel() < 0 || cmd.fatigueLevel() > 2)
-            throw new IllegalArgumentException("fatigueLevel은 0~2 범위여야 합니다.");
+        if (cmd.goalDurationSec() <= 0) throw new IllegalArgumentException("goalDurationSec는 0보다 커야 합니다.");
+        if (cmd.goalDurationSec() > 86400) throw new IllegalArgumentException("goalDurationSec는 86400초(24시간) 이하여야 합니다.");
+
+        if (cmd.fatigueLevel() < 1 || cmd.fatigueLevel() > 5)
+            throw new IllegalArgumentException("fatigueLevel은 1~5 범위여야 합니다.");
         if (cmd.caffeineIntakeLevel() < 0 || cmd.caffeineIntakeLevel() > 2)
             throw new IllegalArgumentException("caffeineIntakeLevel은 0~2 범위여야 합니다.");
         if (cmd.noiseLevel() < 0 || cmd.noiseLevel() > 2)
