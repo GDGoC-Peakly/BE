@@ -7,6 +7,7 @@ import com.example.peakly.domain.category.repository.MajorCategoryRepository;
 import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartRequest;
 import com.example.peakly.domain.focusSession.dto.response.FocusSessionPauseResponse;
+import com.example.peakly.domain.focusSession.dto.response.FocusSessionResumeResponse;
 import com.example.peakly.domain.focusSession.dto.response.FocusSessionStartResponse;
 import com.example.peakly.domain.focusSession.entity.FocusSession;
 import com.example.peakly.domain.focusSession.entity.SessionPause;
@@ -145,6 +146,51 @@ public class FocusSessionServiceImpl implements FocusSessionService {
                 new FocusSessionPauseResponse.PauseDTO(
                         created.getId(),
                         created.getPausedAt()
+                )
+        );
+    }
+
+    @Transactional
+    public FocusSessionResumeResponse resume(Long userId, Long sessionId) {
+        FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
+                .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
+
+        if (session.getSessionStatus() != SessionStatus.PAUSED) {
+            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+
+        List<SessionPause> openPauses =
+                sessionPauseRepository.findAllByFocusSession_IdAndResumedAtIsNull(sessionId);
+
+        if (openPauses.size() != 1) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+
+        SessionPause open = openPauses.get(0);
+
+        LocalDateTime resumedAt = LocalDateTime.now();
+        long pauseSecLong = Duration.between(open.getPausedAt(), resumedAt).getSeconds();
+        if (pauseSecLong < 0) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+
+        open.resume(resumedAt, (int) pauseSecLong);
+
+        session.markRunning();
+
+        int remainingFocusSec = Math.max(session.getGoalDurationSec() - session.getTotalFocusSec(), 0);
+        LocalDateTime expectedEndAt = resumedAt.plusSeconds(remainingFocusSec);
+
+        return new FocusSessionResumeResponse(
+                session.getId(),
+                session.getSessionStatus().name(),
+                session.getTotalFocusSec(),
+                expectedEndAt,
+                new FocusSessionResumeResponse.PauseDTO(
+                        open.getId(),
+                        open.getPausedAt(),
+                        open.getResumedAt(),
+                        open.getPauseSec()
                 )
         );
     }

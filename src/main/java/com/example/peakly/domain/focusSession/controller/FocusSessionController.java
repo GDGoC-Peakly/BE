@@ -41,8 +41,7 @@ public class FocusSessionController {
             @PathVariable("sessionId") Long sessionId
     ) {
         Long userId = SecurityUtil.requireUserId();
-//        FocusSessionResumeResponse res = focusSessionService.resume(userId, sessionId);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(focusSessionService.resume(userId, sessionId));
     }
 
     @PostMapping("/{sessionId}/end")

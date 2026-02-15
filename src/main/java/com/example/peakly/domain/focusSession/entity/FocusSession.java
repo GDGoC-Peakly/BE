@@ -158,6 +158,10 @@ public class FocusSession extends BaseEntity {
         this.sessionStatus = SessionStatus.RUNNING;
     }
 
+    public void markRunning() {
+        this.sessionStatus = SessionStatus.RUNNING;
+    }
+
     public void end(LocalDateTime endedAt, int totalFocusSec) {
         if (endedAt == null) throw new IllegalArgumentException("endedAt은 필수입니다.");
         if (totalFocusSec < 0) throw new IllegalArgumentException("totalFocusSec는 0 이상이어야 합니다.");
