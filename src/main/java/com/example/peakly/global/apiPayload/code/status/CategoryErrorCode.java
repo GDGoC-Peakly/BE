@@ -15,8 +15,21 @@ public enum CategoryErrorCode implements BaseErrorCode {
     INVALID_TAG_NAMES(HttpStatus.BAD_REQUEST, "CATEGORY_005", "태그 이름 목록이 올바르지 않습니다."),
     REQUIRED_FIELD_MISSING(HttpStatus.BAD_REQUEST, "CATEGORY_006", "필수 입력값이 없습니다."),
     MAJOR_CATEGORY_ESSENTIAL(HttpStatus.BAD_REQUEST, "CATEGORY_007", "대분류 입력은 필수입니다."),
-    NAME_NOT_EXIST(HttpStatus.BAD_REQUEST,"CATEGORY_008", "이름은 비어 있을 수 없습니다.")
+    NAME_NOT_EXIST(HttpStatus.BAD_REQUEST,"CATEGORY_008", "이름은 비어 있을 수 없습니다."),
+
+    CATEGORY_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "CATEGORY404_003",
+                    "카테고리를 찾을 수 없습니다."
+    ),
+
+    CATEGORY_MAJOR_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "CATEGORY400_005",
+            "카테고리의 대분류가 일치하지 않습니다."
+    ),
     ;
+
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;

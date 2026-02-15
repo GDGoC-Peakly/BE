@@ -109,8 +109,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public EmailVerifyResponse verifyEmail(EmailVerifyRequest req) {
-        String rawToken = req.token();
+    public EmailVerifyResponse verifyEmail(String rawToken) {
         String tokenHash = sha256Hex(rawToken);
 
         EmailVerificationToken token = emailVerificationTokenRepository.findByTokenHash(tokenHash)
@@ -126,7 +125,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         token.markUsed(now);
-        // save 호출 없이도 영속 상태면 flush 시 반영됩니다.
         return new EmailVerifyResponse(true);
     }
 

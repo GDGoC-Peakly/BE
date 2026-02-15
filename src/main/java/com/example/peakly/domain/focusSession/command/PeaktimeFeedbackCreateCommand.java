@@ -1,4 +1,4 @@
-package com.example.peakly.domain.focus.command;
+package com.example.peakly.domain.focusSession.command;
 
 import java.util.List;
 
