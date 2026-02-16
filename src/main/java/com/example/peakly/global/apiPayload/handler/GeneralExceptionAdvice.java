@@ -5,6 +5,7 @@ import com.example.peakly.global.apiPayload.code.BaseErrorCode;
 import com.example.peakly.global.apiPayload.code.status.AuthErrorStatus;
 import com.example.peakly.global.apiPayload.code.status.ErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -109,6 +111,29 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
                 request,
                 "서버 내부 오류가 발생했습니다."
         );
+    }
+
+    /**
+     * 6) Optimistic Lock 충돌 (@Version)
+     * - 동일 리소스에 대한 동시 수정 충돌
+     */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Object> onObjectOptimisticLockingFailure(
+            ObjectOptimisticLockingFailureException ex,
+            HttpServletRequest request
+    ) {
+        return handleExceptionInternal(ex, ErrorStatus._CONFLICT, HttpHeaders.EMPTY, request);
+    }
+
+    /**
+     * 6-1) JPA OptimisticLockException (혹시 직접 터지는 케이스 대비)
+     */
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<Object> onOptimisticLockException(
+            OptimisticLockException ex,
+            HttpServletRequest request
+    ) {
+        return handleExceptionInternal(ex, ErrorStatus._CONFLICT, HttpHeaders.EMPTY, request);
     }
 
     /**

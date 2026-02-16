@@ -33,8 +33,7 @@ public class FocusSessionController {
             @PathVariable("sessionId") Long sessionId
     ) {
         Long userId = SecurityUtil.requireUserId();
-//        FocusSessionPauseResponse res = focusSessionService.pause(userId, sessionId);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(focusSessionService.pause(userId, sessionId));
     }
 
     @PostMapping("/{sessionId}/resume")
@@ -42,8 +41,7 @@ public class FocusSessionController {
             @PathVariable("sessionId") Long sessionId
     ) {
         Long userId = SecurityUtil.requireUserId();
-//        FocusSessionResumeResponse res = focusSessionService.resume(userId, sessionId);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(focusSessionService.resume(userId, sessionId));
     }
 
     @PostMapping("/{sessionId}/end")
@@ -52,8 +50,7 @@ public class FocusSessionController {
             @Valid @RequestBody FocusSessionEndRequest req
     ) {
         Long userId = SecurityUtil.requireUserId();
-//        FocusSessionEndResponse res = focusSessionService.end(userId, sessionId, req);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(focusSessionService.end(userId, sessionId, req));
     }
 
 }
