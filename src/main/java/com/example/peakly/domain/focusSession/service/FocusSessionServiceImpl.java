@@ -192,6 +192,8 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
         }
 
+        SessionStatus statusBeforeEnd = session.getSessionStatus();
+
         LocalDateTime endedAt = LocalDateTime.now();
 
         if (session.getSessionStatus() == SessionStatus.RUNNING) {
@@ -218,16 +220,16 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
         }
 
-        Integer clientSec = req.clientTotalFocusTimeSec(); // DTO 필드명 그대로
+        Integer clientSec = req.clientTotalFocusTimeSec();
         if (clientSec != null) {
             int serverSec = session.getTotalFocusSec();
             int diff = Math.abs(serverSec - clientSec);
 
             if (diff >= CLIENT_SERVER_MISMATCH_WARN_SEC) {
                 log.warn(
-                        "FocusSession end sanity check 결과가 일치하지 않습니다.." +
+                        "FocusSession end sanity check 결과가 일치하지 않습니다." +
                                 "sessionId={}, userId={}, clientSec={}, serverSec={}, diffSec={}, statusBeforeEnd={}",
-                        sessionId, userId, clientSec, serverSec, diff, session.getSessionStatus()
+                        sessionId, userId, clientSec, serverSec, diff, statusBeforeEnd
                 );
             }
         }
