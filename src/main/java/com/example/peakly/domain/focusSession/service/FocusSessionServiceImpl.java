@@ -131,6 +131,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         session.pause(pausedAt);
 
         SessionPause created = session.getPauses().get(session.getPauses().size() - 1);
+        sessionPauseRepository.save(created);
 
         return new FocusSessionPauseResponse(
                 session.getId(),
