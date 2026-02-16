@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -110,8 +109,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public EmailVerifyResponse verifyEmail(EmailVerifyRequest req) {
-        String rawToken = req.token();
+    public EmailVerifyResponse verifyEmail(String rawToken) {
         String tokenHash = sha256Hex(rawToken);
 
         EmailVerificationToken token = emailVerificationTokenRepository.findByTokenHash(tokenHash)
@@ -127,7 +125,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         token.markUsed(now);
-        // save 호출 없이도 영속 상태면 flush 시 반영됩니다.
         return new EmailVerifyResponse(true);
     }
 
@@ -148,7 +145,7 @@ public class AuthServiceImpl implements AuthService {
 
         String passwordHash = passwordEncoder.encode(req.password());
 
-        User user = User.createEmailUser(req.email(), passwordHash, req.nickname());
+        User user = User.createEmailUser(req.email(), passwordHash);
 
         // (선택) 소셜 가입/탈퇴 유저 재가입 정책이 있으면 여기서 분기 필요
         // 현재는 단순 신규 생성 정책

@@ -52,3 +52,4 @@ auth:
       window-seconds: 60
       max-per-window: 3
     link-base-url: ${EMAIL_VERIFY_LINK_BASE_URL:https://example.com/email-verify}
+

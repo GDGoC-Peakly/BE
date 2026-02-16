@@ -4,7 +4,6 @@ import com.example.peakly.domain.auth.dto.request.CheckEmailRequest;
 import com.example.peakly.domain.auth.dto.request.LoginRequest;
 import com.example.peakly.domain.auth.dto.request.SignupRequest;
 import com.example.peakly.domain.auth.dto.request.EmailVerifySendRequest;
-import com.example.peakly.domain.auth.dto.request.EmailVerifyRequest;
 import com.example.peakly.domain.auth.dto.response.CheckEmailResponse;
 import com.example.peakly.domain.auth.dto.response.SignupResponse;
 import com.example.peakly.domain.auth.dto.response.LoginResponse;
@@ -13,10 +12,13 @@ import com.example.peakly.domain.auth.dto.response.EmailVerifyResponse;
 import com.example.peakly.domain.auth.service.AuthService;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
@@ -46,8 +48,12 @@ public class AuthController {
         return ApiResponse.onSuccess(authService.sendEmailVerify(req));
     }
 
-    @PostMapping("/email-verify")
-    public ApiResponse<EmailVerifyResponse> verifyEmail(@Valid @RequestBody EmailVerifyRequest req) {
-        return ApiResponse.onSuccess(authService.verifyEmail(req));
+    @GetMapping("/email-verify")
+    public ApiResponse<EmailVerifyResponse> verifyEmail(
+            @RequestParam("token")
+            @NotBlank(message = "토큰 값이 필요합니다.")
+            String token
+    ) {
+        return ApiResponse.onSuccess(authService.verifyEmail(token));
     }
 }

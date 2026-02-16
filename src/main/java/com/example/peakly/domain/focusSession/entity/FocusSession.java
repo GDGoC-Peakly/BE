@@ -1,6 +1,6 @@
-package com.example.peakly.domain.focus.entity;
+package com.example.peakly.domain.focusSession.entity;
 
-import com.example.peakly.domain.focus.command.FocusSessionStartCommand;
+import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;
@@ -72,43 +72,70 @@ public class FocusSession extends BaseEntity {
     @Column(name = "is_counted_in_stats", nullable = false)
     private boolean countedInStats;
 
+    @Column(name = "is_recorded", nullable = false)
+    private boolean recorded;
+
+    @Version
+    private Long version;
+
     @OneToMany(mappedBy = "focusSession", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<SessionPause> pauses = new ArrayList<>();
 
     @OneToOne(mappedBy = "focusSession", fetch = FetchType.LAZY)
     private PeaktimeFeedback peaktimeFeedback;
 
-    public static FocusSession start(User user, FocusSessionStartCommand cmd) {
-        validateStart(user, cmd);
+    public static FocusSession start(
+            User user,
+            FocusSessionStartCommand cmd,
+            LocalDateTime startedAt,
+            LocalDate baseDate
+    ) {
+        validateStart(user, cmd, startedAt, baseDate);
 
         FocusSession s = new FocusSession();
         s.user = user;
+
         s.majorCategoryId = cmd.majorCategoryId();
         s.categoryId = cmd.categoryId();
-        s.startedAt = cmd.startedAt();
+
+        s.startedAt = startedAt;
+        s.baseDate = baseDate;
+
         s.goalDurationSec = cmd.goalDurationSec();
         s.fatigueLevel = (byte) cmd.fatigueLevel();
         s.caffeineIntakeLevel = (byte) cmd.caffeineIntakeLevel();
         s.noiseLevel = (byte) cmd.noiseLevel();
-        s.baseDate = cmd.baseDate();
 
         s.sessionStatus = SessionStatus.RUNNING;
         s.totalFocusSec = 0;
-        s.countedInStats = true;
+        s.countedInStats = false;
+
+        s.recorded = false;
         return s;
     }
 
-    private static void validateStart(User user, FocusSessionStartCommand cmd) {
+    public void markRecorded(boolean recorded) {
+        this.recorded = recorded;
+    }
+
+    private static void validateStart(
+            User user,
+            FocusSessionStartCommand cmd,
+            LocalDateTime startedAt,
+            LocalDate baseDate
+    ) {
         if (user == null) throw new IllegalArgumentException("user는 필수입니다.");
         if (cmd == null) throw new IllegalArgumentException("cmd는 필수입니다.");
 
         if (cmd.majorCategoryId() == null) throw new IllegalArgumentException("majorCategoryId는 필수입니다.");
-        if (cmd.startedAt() == null) throw new IllegalArgumentException("startedAt은 필수입니다.");
-        if (cmd.baseDate() == null) throw new IllegalArgumentException("baseDate는 필수입니다.");
+        if (startedAt == null) throw new IllegalArgumentException("startedAt은 필수입니다.");
+        if (baseDate == null) throw new IllegalArgumentException("baseDate는 필수입니다.");
 
-        if (cmd.goalDurationSec() < 0) throw new IllegalArgumentException("goalDurationSec는 0 이상이어야 합니다.");
-        if (cmd.fatigueLevel() < 0 || cmd.fatigueLevel() > 2)
-            throw new IllegalArgumentException("fatigueLevel은 0~2 범위여야 합니다.");
+        if (cmd.goalDurationSec() <= 0) throw new IllegalArgumentException("goalDurationSec는 0보다 커야 합니다.");
+        if (cmd.goalDurationSec() > 86400) throw new IllegalArgumentException("goalDurationSec는 86400초(24시간) 이하여야 합니다.");
+
+        if (cmd.fatigueLevel() < 1 || cmd.fatigueLevel() > 5)
+            throw new IllegalArgumentException("fatigueLevel은 1~5 범위여야 합니다.");
         if (cmd.caffeineIntakeLevel() < 0 || cmd.caffeineIntakeLevel() > 2)
             throw new IllegalArgumentException("caffeineIntakeLevel은 0~2 범위여야 합니다.");
         if (cmd.noiseLevel() < 0 || cmd.noiseLevel() > 2)
@@ -124,31 +151,30 @@ public class FocusSession extends BaseEntity {
         this.pauses.add(SessionPause.create(this, pausedAt));
     }
 
-    public void resume(LocalDateTime resumedAt, int pauseSec) {
-        if (resumedAt == null) throw new IllegalArgumentException("resumedAt은 필수입니다.");
-        if (pauseSec < 0) throw new IllegalArgumentException("pauseSec는 0 이상이어야 합니다.");
+    public void addFocusSec(int deltaSec) {
+        if (deltaSec < 0) throw new IllegalArgumentException("deltaSec는 0 이상이어야 합니다.");
+        this.totalFocusSec += deltaSec;
+    }
+
+    public void markRunning() {
         if (this.sessionStatus != SessionStatus.PAUSED) {
-            throw new IllegalStateException("PAUSED 상태에서만 재개가 가능합니다.");
+            throw new IllegalStateException("PAUSED 상태에서만 RUNNING으로 바꿀 수 있습니다.");
         }
-        if (pauses.isEmpty()) throw new IllegalStateException("pause 기록이 없습니다.");
-
-        SessionPause last = pauses.get(pauses.size() - 1);
-        last.resume(resumedAt, pauseSec);
-
         this.sessionStatus = SessionStatus.RUNNING;
     }
 
-    public void end(LocalDateTime endedAt, int totalFocusSec) {
+    public void end(LocalDateTime endedAt, int countedThresholdSec) {
         if (endedAt == null) throw new IllegalArgumentException("endedAt은 필수입니다.");
-        if (totalFocusSec < 0) throw new IllegalArgumentException("totalFocusSec는 0 이상이어야 합니다.");
+        if (countedThresholdSec < 0) throw new IllegalArgumentException("countedThresholdSec는 0 이상이어야 합니다.");
 
         if (this.sessionStatus == SessionStatus.ENDED || this.sessionStatus == SessionStatus.CANCELED) {
-            throw new IllegalStateException("이미 종료/취소된 세션입니다.");
+            throw new IllegalStateException("이미 종료 또는 취소된 세션입니다.");
         }
 
         this.endedAt = endedAt;
-        this.totalFocusSec = totalFocusSec;
         this.sessionStatus = SessionStatus.ENDED;
+
+        this.countedInStats = this.totalFocusSec >= countedThresholdSec;
     }
 
     public void cancel(LocalDateTime canceledAt) {
