@@ -16,6 +16,8 @@ import com.example.peakly.domain.focusSession.entity.SessionPause;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.focusSession.repository.SessionPauseRepository;
+import com.example.peakly.domain.report.service.daily.DailyReportUpdateService;
+import com.example.peakly.domain.report.service.daily.DailyReportUpdateServiceImpl;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
@@ -46,6 +48,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
     private final MajorCategoryRepository majorCategoryRepository;
     private final CategoryRepository categoryRepository;
     private final SessionPauseRepository sessionPauseRepository;
+    private final DailyReportUpdateService dailyReportUpdateService;
 
     @Transactional
     public FocusSessionStartResponse start(Long userId, FocusSessionStartRequest req) {
@@ -236,6 +239,9 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         session.markRecorded(req.isRecorded());
 
+        User user = session.getUser();
+        dailyReportUpdateService.updateReport(user, session.getBaseDate());
+
         return new FocusSessionEndResponse(
                 session.getId(),
                 session.getSessionStatus().name(),
@@ -246,6 +252,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
                 session.isRecorded(),
                 session.isCountedInStats()
         );
+
     }
 
 

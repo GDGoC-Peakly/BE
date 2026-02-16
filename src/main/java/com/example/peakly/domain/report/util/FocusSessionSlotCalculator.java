@@ -1,6 +1,6 @@
 package com.example.peakly.domain.report.util;
 
-import com.example.peakly.domain.focus.entity.FocusSession;
+import com.example.peakly.domain.focusSession.entity.FocusSession;
 import com.example.peakly.domain.peakTimePrediction.dto.response.PeakWindowJson;
 import org.springframework.stereotype.Component;
 

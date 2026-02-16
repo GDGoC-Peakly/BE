@@ -1,7 +1,8 @@
 package com.example.peakly.domain.report.service.daily;
 
-import com.example.peakly.domain.focus.entity.FocusSession;
-import com.example.peakly.domain.focus.entity.SessionStatus;
+import com.example.peakly.domain.focusSession.entity.FocusSession;
+import com.example.peakly.domain.focusSession.entity.SessionStatus;
+import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.peakTimePrediction.dto.response.PeakWindowJson;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
 import com.example.peakly.domain.peakTimePrediction.repository.PeakTimePredictionRepository;

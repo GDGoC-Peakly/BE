@@ -1,7 +1,8 @@
 package com.example.peakly.domain.report.service.daily;
 
-import com.example.peakly.domain.focus.entity.FocusSession;
-import com.example.peakly.domain.focus.entity.SessionStatus;
+import com.example.peakly.domain.focusSession.entity.FocusSession;
+import com.example.peakly.domain.focusSession.entity.SessionStatus;
+import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.peakTimePrediction.dto.response.PeakWindowJson;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
 import com.example.peakly.domain.peakTimePrediction.repository.PeakTimePredictionRepository;
@@ -70,10 +71,10 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
             for (PeakWindowJson window : top3Windows) {
                 int elapsed = 0;
                 while (elapsed < PEAK_WINDOW_MINUTES) {
-                    // 슬롯 절대 시간 계산
                     LocalTime slotStart = LocalTime.of(window.hour(), 0).plusMinutes(elapsed);
                     int actualMin = slotCalculator.calcActualMinInSlot(sessions, slotStart);
-                    slots.add(reportConverter.toTimeSlotDto(elapsed, actualMin, SLOT_MINUTES));
+                    // 슬롯 절대 시간 계산
+                    slots.add(reportConverter.toTimeSlotDto(slotStart, actualMin, SLOT_MINUTES));
                     elapsed += SLOT_MINUTES;
                 }
             }

@@ -25,7 +25,7 @@ public class DailyReportDetailController {
 
     @Operation(
             summary = "일간 상세 리포트 조회",
-            description = "특정 날짜의 달성률, 적중률 및 시간대별 그래프 데이터를 조회합니다."
+            description = "시간대별 그래프 데이터는 당일에, 특정 날짜의 달성률 및 적중률은 다음날에 조회합니다."
     )
     @GetMapping("/{date}")
     public ApiResponse<DailyReportDetailResponse> getDailyReport(
