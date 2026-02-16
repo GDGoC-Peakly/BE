@@ -108,8 +108,14 @@ public class FocusSession extends BaseEntity {
 
         s.sessionStatus = SessionStatus.RUNNING;
         s.totalFocusSec = 0;
-        s.countedInStats = true;
+        s.countedInStats = false;
+
+        s.recorded = false;
         return s;
+    }
+
+    public void markRecorded(boolean recorded) {
+        this.recorded = recorded;
     }
 
     private static void validateStart(
@@ -157,21 +163,18 @@ public class FocusSession extends BaseEntity {
         this.sessionStatus = SessionStatus.RUNNING;
     }
 
-    public void end(LocalDateTime endedAt, int totalFocusSec) {
+    public void end(LocalDateTime endedAt, int countedThresholdSec) {
         if (endedAt == null) throw new IllegalArgumentException("endedAt은 필수입니다.");
-        if (totalFocusSec < 0) throw new IllegalArgumentException("totalFocusSec는 0 이상이어야 합니다.");
+        if (countedThresholdSec < 0) throw new IllegalArgumentException("countedThresholdSec는 0 이상이어야 합니다.");
 
         if (this.sessionStatus == SessionStatus.ENDED || this.sessionStatus == SessionStatus.CANCELED) {
             throw new IllegalStateException("이미 종료 또는 취소된 세션입니다.");
         }
 
         this.endedAt = endedAt;
-        this.totalFocusSec = totalFocusSec;
         this.sessionStatus = SessionStatus.ENDED;
-    }
 
-    public void markCountedInStats(boolean countedInStats) {
-        this.countedInStats = countedInStats;
+        this.countedInStats = this.totalFocusSec >= countedThresholdSec;
     }
 
     public void cancel(LocalDateTime canceledAt) {

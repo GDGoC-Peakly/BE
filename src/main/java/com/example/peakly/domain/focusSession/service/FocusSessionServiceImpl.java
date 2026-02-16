@@ -215,9 +215,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
         }
 
-        int finalFocusSec = session.getTotalFocusSec();
-
-        session.markCountedInStats(finalFocusSec >= 300);
+        session.markRecorded(req.isRecorded());
 
         return new FocusSessionEndResponse(
                 session.getId(),
@@ -226,7 +224,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
                 session.getEndedAt(),
                 session.getTotalFocusSec(),
                 session.getGoalDurationSec(),
-                req.isRecorded(),
+                session.isRecorded(),
                 session.isCountedInStats()
         );
     }
