@@ -148,6 +148,9 @@ public class FocusSession extends BaseEntity {
     }
 
     public void markRunning() {
+        if (this.sessionStatus != SessionStatus.PAUSED) {
+            throw new IllegalStateException("PAUSED 상태에서만 RUNNING으롤 바꿀 수 있습니다.");
+        }
         this.sessionStatus = SessionStatus.RUNNING;
     }
 
