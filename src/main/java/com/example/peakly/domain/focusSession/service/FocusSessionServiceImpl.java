@@ -23,6 +23,7 @@ import com.example.peakly.global.apiPayload.code.status.FocusSessionErrorStatus;
 import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +33,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FocusSessionServiceImpl implements FocusSessionService {
 
     private static final int COUNTED_THRESHOLD_SEC = 300;
+    private static final int CLIENT_SERVER_MISMATCH_WARN_SEC = 600;
 
     private final FocusSessionRepository focusSessionRepository;
     private final UserRepository userRepository;
@@ -213,6 +216,20 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         } else {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+        }
+
+        Integer clientSec = req.clientTotalFocusTimeSec(); // DTO 필드명 그대로
+        if (clientSec != null) {
+            int serverSec = session.getTotalFocusSec();
+            int diff = Math.abs(serverSec - clientSec);
+
+            if (diff >= CLIENT_SERVER_MISMATCH_WARN_SEC) {
+                log.warn(
+                        "FocusSession end sanity check 결과가 일치하지 않습니다.." +
+                                "sessionId={}, userId={}, clientSec={}, serverSec={}, diffSec={}, statusBeforeEnd={}",
+                        sessionId, userId, clientSec, serverSec, diff, session.getSessionStatus()
+                );
+            }
         }
 
         session.markRecorded(req.isRecorded());
