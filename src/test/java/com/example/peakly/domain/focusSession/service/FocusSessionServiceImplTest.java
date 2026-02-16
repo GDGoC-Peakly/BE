@@ -14,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +31,6 @@ class FocusSessionServiceImplTest {
     @Mock FocusSessionRepository focusSessionRepository;
     @Mock SessionPauseRepository sessionPauseRepository;
 
-    // start에 필요한 repo는 end 테스트에서는 null이어도 되지만, 생성자 주입 때문에 mock으로 둡니다.
     @Mock com.example.peakly.domain.user.repository.UserRepository userRepository;
     @Mock com.example.peakly.domain.category.repository.MajorCategoryRepository majorCategoryRepository;
     @Mock com.example.peakly.domain.category.repository.CategoryRepository categoryRepository;
@@ -48,66 +46,86 @@ class FocusSessionServiceImplTest {
     }
 
     @Test
-    void end_running_accumulatesFocus_andEnds_andSetsCountedInStats() {
-        // given
+    void end_running_accumulatesFocus_andEnds_andSetsCountedInStats_andMarksRecorded() {
         FocusSession session = mock(FocusSession.class);
 
         when(focusSessionRepository.findByIdAndUser_Id(sessionId, userId))
                 .thenReturn(Optional.of(session));
 
-        when(session.getSessionStatus()).thenReturn(SessionStatus.RUNNING);
+        java.util.concurrent.atomic.AtomicReference<SessionStatus> statusRef =
+                new java.util.concurrent.atomic.AtomicReference<>(SessionStatus.RUNNING);
+
+        when(session.getSessionStatus()).thenAnswer(inv -> statusRef.get());
+
+        doAnswer(inv -> {
+            statusRef.set(SessionStatus.ENDED);
+            return null;
+        }).when(session).end(any(LocalDateTime.class), eq(300));
+
         when(session.getStartedAt()).thenReturn(LocalDateTime.now().minusMinutes(10));
 
-        // RUNNING 상태에서 open pause 없어야 함
         when(sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId))
                 .thenReturn(false);
 
-        // 마지막 resume 없으면 startedAt 기준 사용하도록 - Optional.empty
         when(sessionPauseRepository.findLatestResumedPause(sessionId))
                 .thenReturn(Optional.empty());
 
-        // addFocusSec 이후 totalFocusSec 사용될 수 있으니 stub
         when(session.getId()).thenReturn(sessionId);
-        when(session.getStartedAt()).thenReturn(LocalDateTime.now().minusMinutes(10));
-        when(session.getEndedAt()).thenReturn(LocalDateTime.now()); // 응답 구성용
-        when(session.getTotalFocusSec()).thenReturn(600); // 임의값(서비스가 직접 계산값을 읽지는 않지만 응답에 사용)
+        when(session.getEndedAt()).thenReturn(LocalDateTime.now());
+        when(session.getTotalFocusSec()).thenReturn(600);
         when(session.getGoalDurationSec()).thenReturn(1200);
         when(session.isCountedInStats()).thenReturn(true);
 
+        java.util.concurrent.atomic.AtomicBoolean recordedRef = new java.util.concurrent.atomic.AtomicBoolean(false);
+        when(session.isRecorded()).thenAnswer(inv -> recordedRef.get());
+        doAnswer(inv -> {
+            recordedRef.set(inv.getArgument(0, Boolean.class));
+            return null;
+        }).when(session).markRecorded(anyBoolean());
+
         FocusSessionEndRequest req = mock(FocusSessionEndRequest.class);
         when(req.isRecorded()).thenReturn(true);
+        when(req.clientTotalFocusTimeSec()).thenReturn(590);
 
-        // when
         FocusSessionEndResponse res = service.end(userId, sessionId, req);
 
-        // then
-        // 누적 로직: addFocusSec가 호출되어야 함 (정확한 값은 LocalDateTime.now에 의존하므로 anyInt)
         verify(session, atLeastOnce()).addFocusSec(anyInt());
-
-        // end는 threshold 전달
         verify(session, times(1)).end(any(LocalDateTime.class), eq(300));
 
+        ArgumentCaptor<Boolean> recordedCaptor = ArgumentCaptor.forClass(Boolean.class);
+        verify(session, times(1)).markRecorded(recordedCaptor.capture());
+        assertTrue(recordedCaptor.getValue());
+
         assertEquals(sessionId, res.sessionId());
-        assertEquals("RUNNING".equals(res.sessionStatus()) ? res.sessionStatus() : res.sessionStatus(), res.sessionStatus()); // 상태 문자열은 구현에 따름
+        assertEquals("ENDED", res.sessionStatus());
+        assertTrue(res.isRecorded());
+        assertTrue(res.isCountedInStats());
     }
 
+
     @Test
-    void end_paused_resumesOpenPause_andEnds() {
-        // given
+    void end_paused_resumesOpenPause_andEnds_andMarksRecorded() {
         FocusSession session = mock(FocusSession.class);
         SessionPause open = mock(SessionPause.class);
 
         when(focusSessionRepository.findByIdAndUser_Id(sessionId, userId))
                 .thenReturn(Optional.of(session));
 
-        when(session.getSessionStatus()).thenReturn(SessionStatus.PAUSED);
+        java.util.concurrent.atomic.AtomicReference<SessionStatus> statusRef =
+                new java.util.concurrent.atomic.AtomicReference<>(SessionStatus.PAUSED);
+
+        when(session.getSessionStatus()).thenAnswer(inv -> statusRef.get());
+
+        doAnswer(inv -> {
+            statusRef.set(SessionStatus.ENDED);
+            return null;
+        }).when(session).end(any(LocalDateTime.class), eq(300));
 
         when(sessionPauseRepository.findAllByFocusSession_IdAndResumedAtIsNull(sessionId))
                 .thenReturn(List.of(open));
 
         when(open.getPausedAt()).thenReturn(LocalDateTime.now().minusMinutes(3));
 
-        // 응답용
         when(session.getId()).thenReturn(sessionId);
         when(session.getStartedAt()).thenReturn(LocalDateTime.now().minusMinutes(30));
         when(session.getEndedAt()).thenReturn(LocalDateTime.now());
@@ -115,19 +133,31 @@ class FocusSessionServiceImplTest {
         when(session.getGoalDurationSec()).thenReturn(1200);
         when(session.isCountedInStats()).thenReturn(true);
 
+        java.util.concurrent.atomic.AtomicBoolean recordedRef = new java.util.concurrent.atomic.AtomicBoolean(true);
+        when(session.isRecorded()).thenAnswer(inv -> recordedRef.get());
+        doAnswer(inv -> {
+            recordedRef.set(inv.getArgument(0, Boolean.class));
+            return null;
+        }).when(session).markRecorded(anyBoolean());
+
         FocusSessionEndRequest req = mock(FocusSessionEndRequest.class);
         when(req.isRecorded()).thenReturn(false);
+        when(req.clientTotalFocusTimeSec()).thenReturn(0);
 
-        // when
         FocusSessionEndResponse res = service.end(userId, sessionId, req);
 
-        // then
         verify(open, times(1)).resume(any(LocalDateTime.class), anyInt());
         verify(session, times(1)).end(any(LocalDateTime.class), eq(300));
 
+        ArgumentCaptor<Boolean> recordedCaptor = ArgumentCaptor.forClass(Boolean.class);
+        verify(session, times(1)).markRecorded(recordedCaptor.capture());
+        assertFalse(recordedCaptor.getValue());
+
         assertEquals(sessionId, res.sessionId());
+        assertEquals("ENDED", res.sessionStatus());
         assertFalse(res.isRecorded());
     }
+
 
     @Test
     void end_invalidState_ended_throws() {
