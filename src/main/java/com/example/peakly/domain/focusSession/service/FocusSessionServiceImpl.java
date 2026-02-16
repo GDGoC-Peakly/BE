@@ -36,6 +36,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FocusSessionServiceImpl implements FocusSessionService {
 
+    private static final int COUNTED_THRESHOLD_SEC = 300;
+
     private final FocusSessionRepository focusSessionRepository;
     private final UserRepository userRepository;
     private final MajorCategoryRepository majorCategoryRepository;
@@ -117,16 +119,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         }
 
         LocalDateTime pausedAt = LocalDateTime.now();
-
-        LocalDateTime lastRunningStartedAt = sessionPauseRepository
-                .findLatestResumedPause(sessionId)
-                .map(SessionPause::getResumedAt)
-                .orElse(session.getStartedAt());
-
-        long deltaSec = Duration.between(lastRunningStartedAt, pausedAt).getSeconds();
-        if (deltaSec < 0) throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
-
-        session.addFocusSec((int) deltaSec);
+        accumulateRunningFocusSec(session, sessionId, pausedAt);
 
         session.pause(pausedAt);
 
@@ -162,12 +155,10 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         SessionPause open = openPauses.get(0);
 
         LocalDateTime resumedAt = LocalDateTime.now();
-        long pauseSecLong = Duration.between(open.getPausedAt(), resumedAt).getSeconds();
-        if (pauseSecLong < 0) {
-            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
-        }
 
-        open.resume(resumedAt, (int) pauseSecLong);
+        int pauseSec = calcDeltaSec(open.getPausedAt(), resumedAt);
+
+        open.resume(resumedAt, pauseSec);
 
         session.markRunning();
 
@@ -201,21 +192,8 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         LocalDateTime endedAt = LocalDateTime.now();
 
         if (session.getSessionStatus() == SessionStatus.RUNNING) {
-
-            if (sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId)) {
-                throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
-            }
-
-            LocalDateTime lastRunningStartedAt = sessionPauseRepository
-                    .findLatestResumedPause(sessionId)
-                    .map(SessionPause::getResumedAt)
-                    .orElse(session.getStartedAt());
-
-            long deltaSec = Duration.between(lastRunningStartedAt, endedAt).getSeconds();
-            if (deltaSec < 0) throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
-
-            session.addFocusSec((int) deltaSec);
-            session.end(endedAt, session.getTotalFocusSec());
+            accumulateRunningFocusSec(session, sessionId, endedAt);
+            session.end(endedAt, COUNTED_THRESHOLD_SEC);
 
         } else if (session.getSessionStatus() == SessionStatus.PAUSED) {
 
@@ -228,12 +206,10 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
             SessionPause open = openPauses.get(0);
 
-            long pauseSecLong = Duration.between(open.getPausedAt(), endedAt).getSeconds();
-            if (pauseSecLong < 0) throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+            int pauseSec = calcDeltaSec(open.getPausedAt(), endedAt);
+            open.resume(endedAt, pauseSec);
 
-            open.resume(endedAt, (int) pauseSecLong);
-
-            session.end(endedAt, session.getTotalFocusSec());
+            session.end(endedAt, COUNTED_THRESHOLD_SEC);
 
         } else {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
@@ -254,4 +230,36 @@ public class FocusSessionServiceImpl implements FocusSessionService {
                 session.isCountedInStats()
         );
     }
+
+
+    private LocalDateTime resolveLastRunningStartedAt(Long sessionId, LocalDateTime sessionStartedAt) {
+        return sessionPauseRepository
+                .findLatestResumedPause(sessionId)
+                .map(SessionPause::getResumedAt)
+                .orElse(sessionStartedAt);
+    }
+
+    private int calcDeltaSec(LocalDateTime from, LocalDateTime to) {
+        long sec = Duration.between(from, to).getSeconds();
+        if (sec < 0) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+        try {
+            return Math.toIntExact(sec);
+        } catch (ArithmeticException e) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+    }
+
+    private void accumulateRunningFocusSec(FocusSession session, Long sessionId, LocalDateTime now) {
+        if (sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId)) {
+            throw new GeneralException(FocusSessionErrorStatus.DATA_INCONSISTENCY);
+        }
+
+        LocalDateTime lastRunningStartedAt = resolveLastRunningStartedAt(sessionId, session.getStartedAt());
+        int deltaSec = calcDeltaSec(lastRunningStartedAt, now);
+
+        session.addFocusSec(deltaSec);
+    }
+
 }
