@@ -119,7 +119,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         LocalDateTime pausedAt = LocalDateTime.now();
 
         LocalDateTime lastRunningStartedAt = sessionPauseRepository
-                .findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId)
+                .findLatestResumedPause(sessionId)
                 .map(SessionPause::getResumedAt)
                 .orElse(session.getStartedAt());
 
@@ -207,7 +207,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             }
 
             LocalDateTime lastRunningStartedAt = sessionPauseRepository
-                    .findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId)
+                    .findLatestResumedPause(sessionId)
                     .map(SessionPause::getResumedAt)
                     .orElse(session.getStartedAt());
 
