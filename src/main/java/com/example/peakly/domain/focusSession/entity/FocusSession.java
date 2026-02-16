@@ -72,6 +72,9 @@ public class FocusSession extends BaseEntity {
     @Column(name = "is_counted_in_stats", nullable = false)
     private boolean countedInStats;
 
+    @Column(name = "is_recorded", nullable = false)
+    private boolean recorded;
+
     @OneToMany(mappedBy = "focusSession", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<SessionPause> pauses = new ArrayList<>();
 
