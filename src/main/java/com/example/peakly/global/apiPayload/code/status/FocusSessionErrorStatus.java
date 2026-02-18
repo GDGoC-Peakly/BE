@@ -26,6 +26,12 @@ public enum FocusSessionErrorStatus implements BaseErrorCode {
             "시간 값이 올바르지 않습니다."
     ),
 
+    INVALID_FOCUS_SCORE(
+            HttpStatus.BAD_REQUEST,
+            "SESSION400_003",
+            "집중도 점수는 1~5 범위여야 합니다."
+    ),
+
     // =========================
     // 401 UNAUTHORIZED
     // =========================
@@ -76,6 +82,18 @@ public enum FocusSessionErrorStatus implements BaseErrorCode {
             HttpStatus.CONFLICT,
             "SESSION409_003",
             "세션 상태 데이터가 일관되지 않습니다."
+    ),
+
+    SESSION_NOT_ENDED(
+            HttpStatus.CONFLICT,
+            "SESSION409_004",
+            "종료되지 않은 세션은 평가할 수 없습니다."
+    ),
+
+    FEEDBACK_ALREADY_EXISTS(
+            HttpStatus.CONFLICT,
+            "SESSION409_005",
+            "이미 집중도 평가가 등록된 세션입니다."
     ),
 
     // =========================
