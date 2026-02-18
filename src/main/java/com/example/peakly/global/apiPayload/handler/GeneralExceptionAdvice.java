@@ -35,7 +35,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
             GeneralException exception,
             HttpServletRequest request
     ) {
-        return handleExceptionInternal(exception, exception.getCode(), null, request);
+        return handleExceptionInternal(exception, exception.getCode(), exception.getPayload(), request);
     }
 
     /**
@@ -140,20 +140,15 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
      * === 내부 공통 처리 ===
      */
     private ResponseEntity<Object> handleExceptionInternal(
-            Exception e,
+            Exception ex,
             BaseErrorCode code,
-            HttpHeaders headers,
+            Object result,
             HttpServletRequest request
     ) {
-        ApiResponse<Object> body = ApiResponse.onFailure(code, null);
-        WebRequest webRequest = new ServletWebRequest(request);
-        return super.handleExceptionInternal(
-                e,
-                body,
-                headers,
-                code.getReasonHttpStatus().getHttpStatus(),
-                webRequest
-        );
+        ApiResponse<Object> body = ApiResponse.onFailure(code, result);
+        return ResponseEntity
+                .status(code.getReasonHttpStatus().getHttpStatus())
+                .body(body);
     }
 
     private ResponseEntity<Object> handleExceptionInternalFalse(
