@@ -37,7 +37,7 @@ public class PeaktimeFeedbackServiceImpl implements PeaktimeFeedbackService {
     @Override
     @Transactional
     public PeaktimeFeedbackCreateResponse createFeedback(Long userId, Long sessionId, PeaktimeFeedbackCreateRequest req) {
-        FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
+        FocusSession session = focusSessionRepository.findByIdAndUserIdForUpdate(sessionId, userId)
                 .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
 
         if (session.getSessionStatus() != SessionStatus.ENDED) {
