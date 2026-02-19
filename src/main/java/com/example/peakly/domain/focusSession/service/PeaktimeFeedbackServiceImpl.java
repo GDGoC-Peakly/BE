@@ -81,9 +81,6 @@ public class PeaktimeFeedbackServiceImpl implements PeaktimeFeedbackService {
         }
 
         List<Long> ids = req.disruptionReasonIds();
-        if (ids == null || ids.isEmpty()) {
-            throw new GeneralException(FeedbackErrorStatus.DISRUPTION_REQUIRED);
-        }
 
         Set<Long> unique = new LinkedHashSet<>(ids);
         if (unique.size() != ids.size()) {
