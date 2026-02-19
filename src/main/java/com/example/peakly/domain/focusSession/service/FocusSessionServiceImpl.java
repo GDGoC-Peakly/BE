@@ -14,7 +14,6 @@ import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.focusSession.repository.SessionPauseRepository;
 import com.example.peakly.domain.report.service.daily.DailyReportUpdateService;
-import com.example.peakly.domain.report.service.daily.DailyReportUpdateServiceImpl;
 import com.example.peakly.domain.report.util.ReportingDateUtil;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;

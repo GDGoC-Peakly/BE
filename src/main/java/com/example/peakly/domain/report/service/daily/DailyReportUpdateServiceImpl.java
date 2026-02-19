@@ -68,13 +68,8 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
         report.update(totalFocusSec, totalTargetSec, achievementRate, accuracyRate, insight);
 
-        System.out.println("========= 저장 전 값 확인 =========");
-        System.out.println("totalFocusSec: " + totalFocusSec);
-        System.out.println("totalTargetSec: " + totalTargetSec);
-        System.out.println("achievementRate: " + achievementRate);
-        System.out.println("accuracyRate: " + accuracyRate);
-        System.out.println("insight: " + insight);
-        System.out.println("====================================");
+        log.debug("리포트 저장 전 값 확인 - totalFocusSec={}, totalTargetSec={}, achievementRate={}, accuracyRate={}, insight={}",
+                totalFocusSec, totalTargetSec, achievementRate, accuracyRate, insight);
 
         dailyReportRepository.save(report);
     }

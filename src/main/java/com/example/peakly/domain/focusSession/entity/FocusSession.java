@@ -1,7 +1,6 @@
 package com.example.peakly.domain.focusSession.entity;
 
 import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
-import com.example.peakly.domain.report.util.ReportingDateUtil;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.global.common.BaseEntity;
 import jakarta.persistence.*;

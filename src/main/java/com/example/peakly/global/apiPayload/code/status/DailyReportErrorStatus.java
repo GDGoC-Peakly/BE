@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum DailyReportErrorStatus implements BaseErrorCode {
 
-    DAILY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "Report404_001", "해당 날짜의 리포트가 존재하지 않습니다."),
+    DAILY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT404_001", "해당 날짜의 리포트가 존재하지 않습니다."),
     REPORT_JSON_PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "REPORT500_001", "리포트 데이터 형식이 올바르지 않아 읽어올 수 없습니다.");
     ;
 
