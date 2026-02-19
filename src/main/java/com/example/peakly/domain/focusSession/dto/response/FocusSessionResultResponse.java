@@ -1,4 +1,3 @@
-// src/main/java/com/example/peakly/domain/focusSession/dto/response/FocusSessionResultResponse.java
 package com.example.peakly.domain.focusSession.dto.response;
 
 import java.time.LocalDateTime;
