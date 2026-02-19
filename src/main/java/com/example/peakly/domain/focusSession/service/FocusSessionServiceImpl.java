@@ -13,6 +13,8 @@ import com.example.peakly.domain.focusSession.entity.SessionPause;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.focusSession.repository.SessionPauseRepository;
+import com.example.peakly.domain.report.service.daily.DailyReportUpdateService;
+import com.example.peakly.domain.report.util.ReportingDateUtil;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
@@ -44,6 +46,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
     private final MajorCategoryRepository majorCategoryRepository;
     private final CategoryRepository categoryRepository;
     private final SessionPauseRepository sessionPauseRepository;
+    private final DailyReportUpdateService dailyReportUpdateService;
 
     @Transactional
     public FocusSessionStartResponse start(Long userId, FocusSessionStartRequest req) {
@@ -202,6 +205,8 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         LocalDateTime endedAt = LocalDateTime.now();
 
+        session.markRecorded(req.isRecorded());
+
         if (session.getSessionStatus() == SessionStatus.RUNNING) {
             accumulateRunningFocusSec(session, sessionId, endedAt);
             session.end(endedAt, COUNTED_THRESHOLD_SEC);
@@ -240,7 +245,13 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             }
         }
 
-        session.markRecorded(req.isRecorded());
+        try {
+            LocalDate reportDate = ReportingDateUtil.reportingDateOf(endedAt);
+            dailyReportUpdateService.updateReport(session.getUser(), reportDate);
+        } catch (Exception e) {
+            log.error("일간 리포트 업데이트 실패 (sessionId={}, userId={}). 세션 종료는 정상 처리됩니다.",
+                    sessionId, userId, e);
+        }
 
         return new FocusSessionEndResponse(
                 session.getId(),
@@ -252,6 +263,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
                 session.isRecorded(),
                 session.isCountedInStats()
         );
+
     }
 
     private LocalDateTime resolveLastRunningStartedAt(Long sessionId, LocalDateTime sessionStartedAt) {
