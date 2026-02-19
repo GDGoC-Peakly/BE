@@ -10,7 +10,7 @@ public final class ReportingDateUtil {
 
     private ReportingDateUtil() {}
 
-    /** endedAt 기준: 05:00 이전이면 전날, 이후면 당일 */
+    // endedAt 기준 -> 05:00 이전이면 전날, 이후면 당일
     public static LocalDate reportingDateOf(LocalDateTime endedAt) {
         if (endedAt == null) return null;
         LocalDate date = endedAt.toLocalDate();

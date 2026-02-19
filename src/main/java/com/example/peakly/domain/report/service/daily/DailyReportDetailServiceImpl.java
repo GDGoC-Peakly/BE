@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
@@ -52,22 +53,30 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
         List<FocusSession> slotSessions = focusSessionRepository
                 .findByUser_IdAndBaseDateAndSessionStatus(userId, slotDate, SessionStatus.ENDED);
 
-        List<FocusSession> countedSlotSessions = slotSessions.stream()
+        List<FocusSession> counted = slotSessions.stream()
                 .filter(FocusSession::isCountedInStats)
                 .toList();
 
         List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
-        List<FocusSessionSlotCalculator.TimeRange> mergedRanges = mergePeakWindows(windows);
-        List<DailyReportDetailResponse.TimeSlotDto> timeSlots =
-                createSlotsFromRanges(mergedRanges, countedSlotSessions);
+        List<FocusSessionSlotCalculator.TimeRange> peakRanges = mergePeakWindows(windows);
+        List<FocusSessionSlotCalculator.TimeRange> sessionRanges = extractSessionRanges(counted);
 
-        int slotTotalFocusMin = timeSlots.stream()
-                .mapToInt(ts -> ts.actualMinutes() == null ? 0 : ts.actualMinutes())
-                .sum();
+        // 피크 슬롯 생성
+        Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> peakMap = new LinkedHashMap<>();
+        putSlots(peakMap, peakRanges, counted, true);
 
-        int slotTotalTargetMin = timeSlots.stream()
-                .mapToInt(ts -> ts.targetMinutes() == null ? 0 : ts.targetMinutes())
-                .sum();
+        // 비피크 슬롯 생성 - 세션 범위에서 만들되, 피크에 속한 슬롯은 제외
+        Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> otherMap = new LinkedHashMap<>();
+        putSlotsExcludeKeys(otherMap, sessionRanges, counted, peakMap.keySet());
+
+        List<DailyReportDetailResponse.TimeSlotDto> peakTimeSlots = new ArrayList<>(peakMap.values());
+        List<DailyReportDetailResponse.TimeSlotDto> otherTimeSlots = new ArrayList<>(otherMap.values());
+
+        int peakActualMin = peakTimeSlots.stream().mapToInt(ts -> nvl(ts.actualMinutes())).sum();
+        int peakTargetMin = peakTimeSlots.stream().mapToInt(ts -> nvl(ts.targetMinutes())).sum();
+
+        int otherActualMin = otherTimeSlots.stream().mapToInt(ts -> nvl(ts.actualMinutes())).sum();
+        int otherTargetMin = otherTimeSlots.stream().mapToInt(ts -> nvl(ts.targetMinutes())).sum(); // 보통 0
 
         DailyReport statsReport = dailyReportRepository
                 .findByUserIdAndReportDate(userId, statsDate)
@@ -78,10 +87,61 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
                 slotDate.getDayOfWeek().name(),
                 statsDate,
                 statsReport,
-                timeSlots,
-                slotTotalFocusMin,
-                slotTotalTargetMin
+                peakTimeSlots,
+                otherTimeSlots,
+                peakActualMin,
+                peakTargetMin,
+                otherActualMin,
+                otherTargetMin
         );
+    }
+
+    private int nvl(Integer v) {
+        return v == null ? 0 : v;
+    }
+
+    private void putSlots(
+            Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> map,
+            List<FocusSessionSlotCalculator.TimeRange> ranges,
+            List<FocusSession> sessions,
+            boolean isPeak
+    ) {
+        if (ranges == null || ranges.isEmpty()) return;
+
+        int targetMin = isPeak ? SLOT_MINUTES : 0;
+
+        for (FocusSessionSlotCalculator.TimeRange r : ranges) {
+            if (r == null) continue;
+
+            LocalTime t = r.start();
+            while (t.isBefore(r.end())) {
+                int actualMin = slotCalculator.calcActualMinInSlot(sessions, t);
+                map.putIfAbsent(t, reportConverter.toTimeSlotDto(t, actualMin, targetMin));
+                t = t.plusMinutes(SLOT_MINUTES);
+            }
+        }
+    }
+
+    private void putSlotsExcludeKeys(
+            Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> map,
+            List<FocusSessionSlotCalculator.TimeRange> ranges,
+            List<FocusSession> sessions,
+            Set<LocalTime> exclude
+    ) {
+        if (ranges == null || ranges.isEmpty()) return;
+
+        for (FocusSessionSlotCalculator.TimeRange r : ranges) {
+            if (r == null) continue;
+
+            LocalTime t = r.start();
+            while (t.isBefore(r.end())) {
+                if (!exclude.contains(t)) {
+                    int actualMin = slotCalculator.calcActualMinInSlot(sessions, t);
+                    map.putIfAbsent(t, reportConverter.toTimeSlotDto(t, actualMin, 0));
+                }
+                t = t.plusMinutes(SLOT_MINUTES);
+            }
+        }
     }
 
     private List<PeakWindowJson> parseWindows(String windowJson) {
@@ -126,7 +186,7 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
         for (int i = 1; i < ranges.size(); i++) {
             FocusSessionSlotCalculator.TimeRange next = ranges.get(i);
 
-            if (!next.start().isAfter(cur.end())) { // 겹치거나 이어짐
+            if (!next.start().isAfter(cur.end())) {
                 LocalTime newEnd = next.end().isAfter(cur.end()) ? next.end() : cur.end();
                 cur = new FocusSessionSlotCalculator.TimeRange(cur.start(), newEnd);
             } else {
@@ -135,29 +195,68 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
             }
         }
         merged.add(cur);
+
         return merged;
     }
 
-    private List<DailyReportDetailResponse.TimeSlotDto> createSlotsFromRanges(
-            List<FocusSessionSlotCalculator.TimeRange> ranges,
-            List<FocusSession> sessions
-    ) {
-        if (ranges == null || ranges.isEmpty()) return List.of();
+    private List<FocusSessionSlotCalculator.TimeRange> extractSessionRanges(List<FocusSession> sessions) {
+        if (sessions == null || sessions.isEmpty()) return List.of();
 
-        // time order 유지 + 중복 제거
-        Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> slotMap = new LinkedHashMap<>();
+        List<FocusSessionSlotCalculator.TimeRange> ranges = new ArrayList<>();
 
-        for (FocusSessionSlotCalculator.TimeRange r : ranges) {
-            LocalTime t = r.start();
+        for (FocusSession s : sessions) {
+            LocalDateTime startedAt = s.getStartedAt();
+            LocalDateTime endedAt = s.getEndedAt();
+            if (startedAt == null || endedAt == null) continue;
 
-            while (t.isBefore(r.end())) {
-                int actualMin = slotCalculator.calcActualMinInSlot(sessions, t);
-                slotMap.putIfAbsent(t, reportConverter.toTimeSlotDto(t, actualMin, SLOT_MINUTES));
-                t = t.plusMinutes(SLOT_MINUTES);
+            LocalTime start = startedAt.toLocalTime();
+            LocalTime end = endedAt.toLocalTime();
+
+            if (end.isBefore(start)) {
+                end = LocalTime.MAX; //자정 넘어가는 경우
             }
+
+            ranges.add(new FocusSessionSlotCalculator.TimeRange(
+                    floorToSlot(start),
+                    ceilToSlot(end)
+            ));
         }
 
-        return new ArrayList<>(slotMap.values());
+        if (ranges.isEmpty()) return List.of();
+
+        ranges.sort(Comparator.comparing(FocusSessionSlotCalculator.TimeRange::start));
+
+        List<FocusSessionSlotCalculator.TimeRange> merged = new ArrayList<>();
+        FocusSessionSlotCalculator.TimeRange cur = ranges.get(0);
+
+        for (int i = 1; i < ranges.size(); i++) {
+            FocusSessionSlotCalculator.TimeRange next = ranges.get(i);
+
+            if (!next.start().isAfter(cur.end())) {
+                LocalTime newEnd = next.end().isAfter(cur.end()) ? next.end() : cur.end();
+                cur = new FocusSessionSlotCalculator.TimeRange(cur.start(), newEnd);
+            } else {
+                merged.add(cur);
+                cur = next;
+            }
+        }
+        merged.add(cur);
+
+        return merged;
+    }
+
+    private LocalTime floorToSlot(LocalTime t) {
+        int minute = t.getMinute();
+        int floored = (minute < 30) ? 0 : 30;
+        return LocalTime.of(t.getHour(), floored);
+    }
+
+    private LocalTime ceilToSlot(LocalTime t) {
+        int h = t.getHour();
+        int m = t.getMinute();
+        if (m == 0) return LocalTime.of(h, 0);
+        if (m <= 30) return LocalTime.of(h, 30);
+        return LocalTime.of((h + 1) % 24, 0);
     }
 
     private LocalTime toLocalTime(Double hour) {

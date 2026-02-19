@@ -92,10 +92,10 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
             List<FocusSessionSlotCalculator.TimeRange> mergedRanges = mergePeakWindows(windows);
 
-            int totalPeakTargetSec = slotCalculator.calcTotalPeakTargetSecByRanges(mergedRanges);
+            int totalPeakTargetSec = slotCalculator.calcTotalPeakTargetSecByRanges(baseDate, mergedRanges);
             if (totalPeakTargetSec == 0) return 0.0;
 
-            int totalPeakActualSec = slotCalculator.calcTotalPeakOverlapSecByRanges(mergedRanges, sessions);
+            int totalPeakActualSec = slotCalculator.calcTotalPeakOverlapSecByRanges(baseDate, mergedRanges, sessions);
 
             return Math.min((double) totalPeakActualSec / totalPeakTargetSec * 100, 100.0);
 
