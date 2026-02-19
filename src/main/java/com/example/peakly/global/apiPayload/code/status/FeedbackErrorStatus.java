@@ -56,9 +56,14 @@ public enum FeedbackErrorStatus implements BaseErrorCode {
             "FEEDBACK409_001",
             "이미 방해 요인이 등록된 세션입니다."
     ),
+    // TODO: 추후 중복 관련 상태 추가 예정
+
+    // =========================
+    // 422 UNPROCESSABLE ENTITY
+    // =========================
     DISRUPTION_NOT_ALLOWED_FOR_HIGH_SCORE(
-            HttpStatus.CONFLICT,
-            "FEEDBACK409_003",
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "FEEDBACK422_001",
             "집중도 점수가 2점 이하인 경우에만 방해 요인을 등록할 수 있습니다."
     ),
 
