@@ -70,7 +70,7 @@ public class PeaktimeFeedbackServiceImpl implements PeaktimeFeedbackService {
                 .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
 
         if (session.getSessionStatus() != SessionStatus.ENDED) {
-            throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
+            throw new GeneralException(FocusSessionErrorStatus.SESSION_NOT_ENDED);
         }
 
         PeaktimeFeedback feedback = peaktimeFeedbackRepository.findByFocusSessionIdForUpdate(sessionId)
