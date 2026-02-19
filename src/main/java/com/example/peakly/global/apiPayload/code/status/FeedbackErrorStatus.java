@@ -33,6 +33,11 @@ public enum FeedbackErrorStatus implements BaseErrorCode {
             "FEEDBACK400_004",
             "비활성화된 방해 요인입니다."
     ),
+    DUPLICATE_DISRUPTION_REASON_ID(
+            HttpStatus.BAD_REQUEST,
+            "FEEDBACK400_005",
+            "중복된 방해 요인 ID가 있습니다."
+    ),
 
     // =========================
     // 404 NOT_FOUND
