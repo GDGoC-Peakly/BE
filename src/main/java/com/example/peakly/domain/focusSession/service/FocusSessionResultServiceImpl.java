@@ -29,7 +29,7 @@ public class FocusSessionResultServiceImpl implements FocusSessionResultService 
         FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
                 .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
 
-        if (session.getSessionStatus() != SessionStatus.ENDED) {
+        if (session.getSessionStatus() != SessionStatus.ENDED && session.getSessionStatus() != SessionStatus.CANCELED) {
             throw new GeneralException(FocusSessionErrorStatus.SESSION_NOT_ENDED);
         }
 
