@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,8 @@ import java.util.List;
         }
 )
 public class FocusSession extends BaseEntity {
+
+    private static final LocalTime REPORT_CUTOFF = LocalTime.of(5, 0); //5시 컷오프
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -174,6 +177,8 @@ public class FocusSession extends BaseEntity {
         this.endedAt = endedAt;
         this.sessionStatus = SessionStatus.ENDED;
 
+        this.baseDate = resolveBaseDateByCutoff(endedAt); //종료 시점 기준으로 baseDate 최종 확정
+
         this.countedInStats = this.totalFocusSec >= countedThresholdSec;
     }
 
@@ -185,5 +190,15 @@ public class FocusSession extends BaseEntity {
 
         this.endedAt = canceledAt;
         this.sessionStatus = SessionStatus.CANCELED;
+
+        this.baseDate = resolveBaseDateByCutoff(canceledAt);
+    }
+
+    private static LocalDate resolveBaseDateByCutoff(LocalDateTime time) {
+        LocalDate d = time.toLocalDate();
+        LocalTime t = time.toLocalTime();
+        // 05:00 "이전"이면 전날로 귀속 (04:59:59 포함)
+        if (t.isBefore(REPORT_CUTOFF)) return d.minusDays(1);
+        return d;
     }
 }

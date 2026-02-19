@@ -43,6 +43,9 @@ public class DailyReport extends BaseEntity {
     @Column(name = "total_focus_sec", nullable = false)
     private Integer totalFocusSec = 0;
 
+    @Column(name = "total_target_sec", nullable = false)
+    private Integer totalTargetSec = 0;
+
     @Column(name = "achievement_rate", nullable = false)
     private Double achievementRate = 0.0;
 
@@ -68,5 +71,23 @@ public class DailyReport extends BaseEntity {
         this.weekday = Weekday.from(this.reportDate.getDayOfWeek());
     }
 
+    //리포트 생성
+    public static DailyReport create(User user, LocalDate date) {
+        DailyReport report = new DailyReport();
+        report.user = user;
+        report.reportDate = date;
+        report.baseDate = date.minusDays(date.getDayOfWeek().getValue() - 1); // 그 주 월요일
+        return report;
+    }
+
+    // 업데이트
+    public void update(int totalFocusSec, int totalTargetSec,
+                       double achievementRate, double accuracyRate, Insight insight) {
+        this.totalFocusSec = totalFocusSec;
+        this.totalTargetSec = totalTargetSec;
+        this.achievementRate = achievementRate;
+        this.accuracyRate = accuracyRate;
+        this.insight = insight;
+    }
 }
 
