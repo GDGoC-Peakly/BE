@@ -168,7 +168,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         int pauseSec = calcDeltaSec(open.getPausedAt(), resumedAt);
 
         open.resume(resumedAt, pauseSec);
-
+        sessionPauseRepository.save(open);
         session.markRunning();
 
         int remainingFocusSec = Math.max(session.getGoalDurationSec() - session.getTotalFocusSec(), 0);
@@ -219,7 +219,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
             int pauseSec = calcDeltaSec(open.getPausedAt(), endedAt);
             open.resume(endedAt, pauseSec);
-
+            sessionPauseRepository.save(open);
             session.end(endedAt, COUNTED_THRESHOLD_SEC);
 
         } else {
@@ -254,10 +254,9 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         );
     }
 
-
     private LocalDateTime resolveLastRunningStartedAt(Long sessionId, LocalDateTime sessionStartedAt) {
         return sessionPauseRepository
-                .findLatestResumedPause(sessionId)
+                .findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId)
                 .map(SessionPause::getResumedAt)
                 .orElse(sessionStartedAt);
     }
@@ -284,5 +283,4 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         session.addFocusSec(deltaSec);
     }
-
 }

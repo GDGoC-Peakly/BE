@@ -2,10 +2,8 @@ package com.example.peakly.domain.focusSession.controller;
 
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionEndRequest;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartRequest;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionEndResponse;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionPauseResponse;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionResumeResponse;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionStartResponse;
+import com.example.peakly.domain.focusSession.dto.response.*;
+import com.example.peakly.domain.focusSession.service.FocusSessionResultService;
 import com.example.peakly.domain.focusSession.service.FocusSessionService;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import com.example.peakly.global.security.SecurityUtil;
@@ -19,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class FocusSessionController {
 
     private final FocusSessionService focusSessionService;
+    private final FocusSessionResultService focusSessionResultService;
 
     @PostMapping("/start")
     public ApiResponse<FocusSessionStartResponse> start(
@@ -53,4 +52,10 @@ public class FocusSessionController {
         return ApiResponse.onSuccess(focusSessionService.end(userId, sessionId, req));
     }
 
+    @GetMapping("/{sessionId}/result")
+    public ApiResponse<FocusSessionResultResponse> getResult(
+            @PathVariable("sessionId") Long sessionId) {
+        Long userId = SecurityUtil.requireUserId();
+        return ApiResponse.onSuccess(focusSessionResultService.getResult(userId, sessionId));
+    }
 }
