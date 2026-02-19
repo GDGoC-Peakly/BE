@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,7 +50,6 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
         if (counted.isEmpty()) return;
 
-        // 달성률
         int totalFocusSec  = counted.stream().mapToInt(FocusSession::getTotalFocusSec).sum();
         int totalTargetSec = counted.stream().mapToInt(FocusSession::getGoalDurationSec).sum();
 
@@ -57,7 +57,6 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
                 ? Math.min((double) totalFocusSec / totalTargetSec * 100, 100.0)
                 : 0.0;
 
-        // 적중률
         double accuracyRate = calcAccuracyRate(user.getId(), counted, baseDate);
 
         Insight insight = Insight.from(achievementRate, accuracyRate);
@@ -67,9 +66,6 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
                 .orElseGet(() -> DailyReport.create(user, baseDate));
 
         report.update(totalFocusSec, totalTargetSec, achievementRate, accuracyRate, insight);
-
-        log.debug("리포트 저장 전 값 확인 - totalFocusSec={}, totalTargetSec={}, achievementRate={}, accuracyRate={}, insight={}",
-                totalFocusSec, totalTargetSec, achievementRate, accuracyRate, insight);
 
         dailyReportRepository.save(report);
     }
@@ -85,12 +81,13 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
             List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
             if (windows.isEmpty()) return 0.0;
 
-            List<FocusSessionSlotCalculator.TimeRange> mergedRanges = mergePeakWindows(windows);
+            List<FocusSessionSlotCalculator.DateTimeRange> peakRanges = toPeakRanges(baseDate, windows);
+            if (peakRanges.isEmpty()) return 0.0;
 
-            int totalPeakTargetSec = slotCalculator.calcTotalPeakTargetSecByRanges(baseDate, mergedRanges);
+            int totalPeakTargetSec = slotCalculator.calcTotalTargetSecByRanges(peakRanges);
             if (totalPeakTargetSec == 0) return 0.0;
 
-            int totalPeakActualSec = slotCalculator.calcTotalPeakOverlapSecByRanges(baseDate, mergedRanges, sessions);
+            int totalPeakActualSec = slotCalculator.calcTotalOverlapSecByRanges(peakRanges, sessions);
 
             return Math.min((double) totalPeakActualSec / totalPeakTargetSec * 100, 100.0);
 
@@ -112,33 +109,34 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
         return wrapper.top_peak_times() == null ? List.of() : wrapper.top_peak_times();
     }
 
-    private List<FocusSessionSlotCalculator.TimeRange> mergePeakWindows(List<PeakWindowJson> windows) {
-        List<FocusSessionSlotCalculator.TimeRange> ranges = new ArrayList<>();
+    private List<FocusSessionSlotCalculator.DateTimeRange> toPeakRanges(LocalDate baseDate, List<PeakWindowJson> windows) {
+        List<FocusSessionSlotCalculator.DateTimeRange> ranges = new ArrayList<>();
 
         for (PeakWindowJson w : windows) {
             if (w == null || w.hour() == null || w.duration() == null) continue;
 
-            LocalTime start = toLocalTime(w.hour());
+            LocalTime startT = toLocalTime(w.hour());
             int durationMinutes = (int) Math.round(w.duration() * 60.0);
             if (durationMinutes <= 0) continue;
 
-            LocalTime end = start.plusMinutes(durationMinutes);
-            ranges.add(new FocusSessionSlotCalculator.TimeRange(start, end));
+            LocalDateTime start = baseDate.atTime(startT);
+            LocalDateTime end = start.plusMinutes(durationMinutes);
+            ranges.add(new FocusSessionSlotCalculator.DateTimeRange(start, end));
         }
 
         if (ranges.isEmpty()) return List.of();
 
-        ranges.sort(Comparator.comparing(FocusSessionSlotCalculator.TimeRange::start));
+        ranges.sort(Comparator.comparing(FocusSessionSlotCalculator.DateTimeRange::start));
 
-        List<FocusSessionSlotCalculator.TimeRange> merged = new ArrayList<>();
-        FocusSessionSlotCalculator.TimeRange cur = ranges.get(0);
+        List<FocusSessionSlotCalculator.DateTimeRange> merged = new ArrayList<>();
+        FocusSessionSlotCalculator.DateTimeRange cur = ranges.get(0);
 
         for (int i = 1; i < ranges.size(); i++) {
-            FocusSessionSlotCalculator.TimeRange next = ranges.get(i);
+            FocusSessionSlotCalculator.DateTimeRange next = ranges.get(i);
 
             if (!next.start().isAfter(cur.end())) {
-                LocalTime newEnd = next.end().isAfter(cur.end()) ? next.end() : cur.end();
-                cur = new FocusSessionSlotCalculator.TimeRange(cur.start(), newEnd);
+                LocalDateTime newEnd = next.end().isAfter(cur.end()) ? next.end() : cur.end();
+                cur = new FocusSessionSlotCalculator.DateTimeRange(cur.start(), newEnd);
             } else {
                 merged.add(cur);
                 cur = next;

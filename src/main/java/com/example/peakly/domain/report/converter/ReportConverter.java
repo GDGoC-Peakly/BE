@@ -19,19 +19,21 @@ public class ReportConverter {
             LocalDate statsDate,
             DailyReport statsReport,
 
-            List<DailyReportDetailResponse.TimeSlotDto> peakTimeSlots,
-            List<DailyReportDetailResponse.TimeSlotDto> otherTimeSlots,
+            List<DailyReportDetailResponse.TimeSlotDto> peakSlots,
+            List<DailyReportDetailResponse.TimeSlotDto> nonPeakSlots,
 
             int peakActualMin,
             int peakTargetMin,
-            int otherActualMin,
-            int otherTargetMin
+
+            int nonPeakActualMin
     ) {
         boolean ready = (statsReport != null);
 
         Integer achievement = ready ? (int) Math.round(statsReport.getAchievementRate()) : null;
         Integer accuracy = ready ? (int) Math.round(statsReport.getAccuracyRate()) : null;
-        String insightMsg = ready && statsReport.getInsight() != null ? statsReport.getInsight().getMessage() : null;
+        String insightMsg = ready && statsReport.getInsight() != null
+                ? statsReport.getInsight().getMessage()
+                : null;
 
         return new DailyReportDetailResponse(
                 slotDate,
@@ -42,12 +44,15 @@ public class ReportConverter {
                 achievement,
                 accuracy,
                 insightMsg,
-                peakTimeSlots,
-                otherTimeSlots,
-                peakActualMin,
-                peakTargetMin,
-                otherActualMin,
-                otherTargetMin
+                new DailyReportDetailResponse.PeakTimeStatsDto(
+                        peakSlots,
+                        peakActualMin,
+                        peakTargetMin
+                ),
+                new DailyReportDetailResponse.NonPeakTimeStatsDto(
+                        nonPeakSlots,
+                        nonPeakActualMin
+                )
         );
     }
 

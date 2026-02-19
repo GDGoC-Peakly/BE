@@ -245,8 +245,13 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             }
         }
 
-        LocalDate reportDate = ReportingDateUtil.reportingDateOf(endedAt);
-        dailyReportUpdateService.updateReport(session.getUser(), reportDate);
+        try {
+            LocalDate reportDate = ReportingDateUtil.reportingDateOf(endedAt);
+            dailyReportUpdateService.updateReport(session.getUser(), reportDate);
+        } catch (Exception e) {
+            log.error("일간 리포트 업데이트 실패 (sessionId={}, userId={}). 세션 종료는 정상 처리됩니다.",
+                    sessionId, userId, e);
+        }
 
         return new FocusSessionEndResponse(
                 session.getId(),
