@@ -42,7 +42,8 @@ public class FocusSessionResultServiceImpl implements FocusSessionResultService 
 
         double achievementRate = 0.0;
         if (goalDurationSec > 0) {
-            achievementRate = Math.min(100.0, (totalFocusSec * 100.0) / goalDurationSec);
+            double raw = Math.min(100.0, (totalFocusSec * 100.0) / goalDurationSec);
+            achievementRate = Math.round(raw * 10.0) / 10.0;
         }
 
         Long majorCategoryId = session.getMajorCategoryId();
