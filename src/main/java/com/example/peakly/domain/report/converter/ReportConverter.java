@@ -18,9 +18,14 @@ public class ReportConverter {
             String slotDayOfWeek,
             LocalDate statsDate,
             DailyReport statsReport,
-            List<DailyReportDetailResponse.TimeSlotDto> timeSlots,
-            int slotTotalFocusMin,
-            int slotTotalTargetMin
+
+            List<DailyReportDetailResponse.TimeSlotDto> peakTimeSlots,
+            List<DailyReportDetailResponse.TimeSlotDto> otherTimeSlots,
+
+            int peakActualMin,
+            int peakTargetMin,
+            int otherActualMin,
+            int otherTargetMin
     ) {
         boolean ready = (statsReport != null);
 
@@ -37,11 +42,12 @@ public class ReportConverter {
                 achievement,
                 accuracy,
                 insightMsg,
-                new DailyReportDetailResponse.PeakTimeStatsDto(
-                        timeSlots,
-                        slotTotalFocusMin,
-                        slotTotalTargetMin
-                )
+                peakTimeSlots,
+                otherTimeSlots,
+                peakActualMin,
+                peakTargetMin,
+                otherActualMin,
+                otherTargetMin
         );
     }
 

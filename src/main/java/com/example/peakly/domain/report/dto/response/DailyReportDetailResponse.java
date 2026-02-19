@@ -6,23 +6,21 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record DailyReportDetailResponse(
-        LocalDate slotDate, //차트 기준 날짜
+        LocalDate slotDate,
         String slotDayOfWeek,
-        LocalDate statsDate,  //통계 기준 날짜
+        LocalDate statsDate,
         Boolean statsReady,
         PeriodType periodType,
         Integer achievementRate,
         Integer accuracyRate,
         String insightMessage,
-
-        PeakTimeStatsDto peakTimeStats
+        List<TimeSlotDto> peakTimeSlots,
+        List<TimeSlotDto> otherTimeSlots,
+        Integer peakTotalActualTime,
+        Integer peakTotalTargetTime,
+        Integer otherTotalActualTime,
+        Integer otherTotalTargetTime
 ) {
-    public record PeakTimeStatsDto(
-            List<TimeSlotDto> timeSlots,
-            Integer totalActualTime, // 분
-            Integer totalTargetTime  // 분
-    ) {}
-
     public record TimeSlotDto(
             String time,
             Integer actualMinutes,
