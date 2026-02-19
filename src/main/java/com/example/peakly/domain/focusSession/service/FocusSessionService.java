@@ -16,4 +16,5 @@ public interface FocusSessionService {
     FocusSessionResumeResponse resume(Long userId, Long sessionId);
 
     FocusSessionEndResponse end(Long userId, Long sessionId, FocusSessionEndRequest req);
+
 }

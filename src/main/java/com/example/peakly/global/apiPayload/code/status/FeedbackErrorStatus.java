@@ -8,101 +8,71 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor
-public enum FocusSessionErrorStatus implements BaseErrorCode {
+public enum FeedbackErrorStatus implements BaseErrorCode {
 
     // =========================
     // 400 BAD_REQUEST
     // =========================
-
     INVALID_REQUEST(
             HttpStatus.BAD_REQUEST,
-            "SESSION400_001",
+            "FEEDBACK400_001",
             "잘못된 요청입니다."
     ),
-
-    INVALID_TIME_VALUE(
+    DISRUPTION_REQUIRED(
             HttpStatus.BAD_REQUEST,
-            "SESSION400_002",
-            "시간 값이 올바르지 않습니다."
+            "FEEDBACK400_002",
+            "방해 요인을 1개 이상 선택해야 합니다."
     ),
-
-    INVALID_FOCUS_SCORE(
+    INVALID_DISRUPTION_REASON_ID(
             HttpStatus.BAD_REQUEST,
-            "SESSION400_003",
-            "집중도 점수는 1~5 범위여야 합니다."
+            "FEEDBACK400_003",
+            "방해 요인 ID가 올바르지 않습니다."
     ),
-
-    // =========================
-    // 401 UNAUTHORIZED
-    // =========================
-
-    UNAUTHORIZED(
-            HttpStatus.UNAUTHORIZED,
-            "SESSION401_001",
-            "인증이 필요합니다."
+    INACTIVE_DISRUPTION_REASON(
+            HttpStatus.BAD_REQUEST,
+            "FEEDBACK400_004",
+            "비활성화된 방해 요인입니다."
     ),
-
-    // =========================
-    // 403 FORBIDDEN
-    // =========================
-
-    SESSION_FORBIDDEN(
-            HttpStatus.FORBIDDEN,
-            "SESSION403_001",
-            "세션에 대한 접근 권한이 없습니다."
+    DUPLICATE_DISRUPTION_REASON_ID(
+            HttpStatus.BAD_REQUEST,
+            "FEEDBACK400_005",
+            "중복된 방해 요인 ID가 있습니다."
     ),
 
     // =========================
     // 404 NOT_FOUND
     // =========================
-
-    SESSION_NOT_FOUND(
+    FEEDBACK_NOT_FOUND(
             HttpStatus.NOT_FOUND,
-            "SESSION404_001",
-            "세션을 찾을 수 없습니다."
+            "FEEDBACK404_001",
+            "집중도 평가가 존재하지 않습니다."
     ),
 
     // =========================
     // 409 CONFLICT
     // =========================
-
-    SESSION_ALREADY_RUNNING(
+    DISRUPTION_ALREADY_EXISTS(
             HttpStatus.CONFLICT,
-            "SESSION409_001",
-            "이미 진행 중인 세션이 있습니다."
+            "FEEDBACK409_001",
+            "이미 방해 요인이 등록된 세션입니다."
     ),
+    // TODO: 추후 중복 관련 상태 추가 예정
 
-    INVALID_SESSION_STATE(
-            HttpStatus.CONFLICT,
-            "SESSION409_002",
-            "현재 세션 상태에서 수행할 수 없는 요청입니다."
-    ),
-
-    DATA_INCONSISTENCY(
-            HttpStatus.CONFLICT,
-            "SESSION409_003",
-            "세션 상태 데이터가 일관되지 않습니다."
-    ),
-
-    SESSION_NOT_ENDED(
-            HttpStatus.CONFLICT,
-            "SESSION409_004",
-            "종료되지 않은 세션은 평가할 수 없습니다."
-    ),
-
-    FEEDBACK_ALREADY_EXISTS(
-            HttpStatus.CONFLICT,
-            "SESSION409_005",
-            "이미 집중도 평가가 등록된 세션입니다."
+    // =========================
+    // 422 UNPROCESSABLE ENTITY
+    // =========================
+    DISRUPTION_NOT_ALLOWED_FOR_HIGH_SCORE(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "FEEDBACK422_001",
+            "집중도 점수가 2점 이하인 경우에만 방해 요인을 등록할 수 있습니다."
     ),
 
     // =========================
     // 500 INTERNAL_SERVER_ERROR
     // =========================
-
     INTERNAL_SERVER_ERROR(
             HttpStatus.INTERNAL_SERVER_ERROR,
-            "SESSION500_001",
+            "FEEDBACK500_001",
             "서버 에러가 발생했습니다."
     );
 

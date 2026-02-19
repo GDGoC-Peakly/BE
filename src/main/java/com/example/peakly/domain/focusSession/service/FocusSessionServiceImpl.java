@@ -7,10 +7,7 @@ import com.example.peakly.domain.category.repository.MajorCategoryRepository;
 import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionEndRequest;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartRequest;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionEndResponse;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionPauseResponse;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionResumeResponse;
-import com.example.peakly.domain.focusSession.dto.response.FocusSessionStartResponse;
+import com.example.peakly.domain.focusSession.dto.response.*;
 import com.example.peakly.domain.focusSession.entity.FocusSession;
 import com.example.peakly.domain.focusSession.entity.SessionPause;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
@@ -27,6 +24,7 @@ import com.example.peakly.global.apiPayload.code.status.UserErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,12 +54,20 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(UserErrorStatus.USER_NOT_FOUND));
 
-        boolean exists = focusSessionRepository.existsByUser_IdAndSessionStatusIn(
+        var activeStatuses = List.of(SessionStatus.RUNNING, SessionStatus.PAUSED);
+
+        List<FocusSession> activeSessions = focusSessionRepository.findActiveSessions(
                 userId,
-                List.of(SessionStatus.RUNNING, SessionStatus.PAUSED)
+                activeStatuses,
+                PageRequest.of(0, 1)
         );
-        if (exists) {
-            throw new GeneralException(FocusSessionErrorStatus.SESSION_ALREADY_RUNNING);
+
+        if (!activeSessions.isEmpty()) {
+            FocusSession active = activeSessions.get(0);
+            throw new GeneralException(
+                    FocusSessionErrorStatus.SESSION_ALREADY_RUNNING,
+                    new FocusSessionConflictPayload(active.getId())
+            );
         }
 
         MajorCategory major = majorCategoryRepository.findById(req.majorCategoryId())
@@ -166,7 +172,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         int pauseSec = calcDeltaSec(open.getPausedAt(), resumedAt);
 
         open.resume(resumedAt, pauseSec);
-
+        sessionPauseRepository.save(open);
         session.markRunning();
 
         int remainingFocusSec = Math.max(session.getGoalDurationSec() - session.getTotalFocusSec(), 0);
@@ -219,7 +225,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
             int pauseSec = calcDeltaSec(open.getPausedAt(), endedAt);
             open.resume(endedAt, pauseSec);
-
+            sessionPauseRepository.save(open);
             session.end(endedAt, COUNTED_THRESHOLD_SEC);
 
         } else {
@@ -256,10 +262,9 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
     }
 
-
     private LocalDateTime resolveLastRunningStartedAt(Long sessionId, LocalDateTime sessionStartedAt) {
         return sessionPauseRepository
-                .findLatestResumedPause(sessionId)
+                .findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId)
                 .map(SessionPause::getResumedAt)
                 .orElse(sessionStartedAt);
     }
@@ -286,5 +291,4 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         session.addFocusSec(deltaSec);
     }
-
 }
