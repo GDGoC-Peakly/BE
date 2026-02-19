@@ -5,6 +5,7 @@ import com.example.peakly.domain.report.entity.DailyReport;
 import com.example.peakly.domain.report.enums.PeriodType;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -13,27 +14,37 @@ import java.util.List;
 public class ReportConverter {
 
     public DailyReportDetailResponse toDetailResponse(
-            DailyReport report,
-            List<DailyReportDetailResponse.TimeSlotDto> timeSlots
-    ){
+            LocalDate slotDate,
+            String slotDayOfWeek,
+            LocalDate statsDate,
+            DailyReport statsReport,
+            List<DailyReportDetailResponse.TimeSlotDto> timeSlots,
+            int slotTotalFocusMin,
+            int slotTotalTargetMin
+    ) {
+        boolean ready = (statsReport != null);
+
+        Integer achievement = ready ? (int) Math.round(statsReport.getAchievementRate()) : null;
+        Integer accuracy = ready ? (int) Math.round(statsReport.getAccuracyRate()) : null;
+        String insightMsg = ready && statsReport.getInsight() != null ? statsReport.getInsight().getMessage() : null;
+
         return new DailyReportDetailResponse(
-                report.getReportDate(),
-                report.getWeekday().name(),
+                slotDate,
+                slotDayOfWeek,
+                statsDate,
+                ready,
                 PeriodType.DAILY,
-                (int) Math.round(report.getAchievementRate()), //소수점 반올림
-                (int) Math.round(report.getAccuracyRate()),
-                report.getInsight() != null
-                        ? report.getInsight().getMessage()
-                        : null,
+                achievement,
+                accuracy,
+                insightMsg,
                 new DailyReportDetailResponse.PeakTimeStatsDto(
                         timeSlots,
-                        report.getTotalFocusSec() / 60, // 초 -> 분 변환
-                        report.getTotalTargetSec() / 60
+                        slotTotalFocusMin,
+                        slotTotalTargetMin
                 )
         );
     }
 
-    // 시간대별 데이터 Dto 생성
     public DailyReportDetailResponse.TimeSlotDto toTimeSlotDto(
             LocalTime slotStart, Integer actualMinutes, Integer targetMinutes
     ) {

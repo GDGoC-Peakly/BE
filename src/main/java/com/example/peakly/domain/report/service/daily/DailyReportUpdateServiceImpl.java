@@ -3,6 +3,7 @@ package com.example.peakly.domain.report.service.daily;
 import com.example.peakly.domain.focusSession.entity.FocusSession;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
+import com.example.peakly.domain.peakTimePrediction.dto.response.PeakTimeAiStoredJson;
 import com.example.peakly.domain.peakTimePrediction.dto.response.PeakWindowJson;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
 import com.example.peakly.domain.peakTimePrediction.repository.PeakTimePredictionRepository;
@@ -17,15 +18,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DailyReportUpdateServiceImpl implements DailyReportUpdateService{
-    private static final int PEAK_WINDOW_MINUTES = 90;
-    private static final int SLOT_MINUTES = 30;
+public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
     private final DailyReportDetailRepository dailyReportRepository;
     private final FocusSessionRepository focusSessionRepository;
@@ -37,60 +40,123 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService{
     @Transactional
     public void updateReport(User user, LocalDate baseDate) {
 
-        // 해당 날짜 완료된 세션 조회
-        List<FocusSession> sessions = focusSessionRepository.findByUser_IdAndBaseDateAndSessionStatus
-                (user.getId(), baseDate, SessionStatus.ENDED);
+        List<FocusSession> sessions = focusSessionRepository
+                .findByUser_IdAndBaseDateAndSessionStatus(user.getId(), baseDate, SessionStatus.ENDED);
 
-        // 통계 포함 세션만 필터링
         List<FocusSession> counted = sessions.stream()
                 .filter(FocusSession::isCountedInStats)
                 .toList();
 
         if (counted.isEmpty()) return;
 
-        // 달성률 계산
+        // 달성률
         int totalFocusSec  = counted.stream().mapToInt(FocusSession::getTotalFocusSec).sum();
         int totalTargetSec = counted.stream().mapToInt(FocusSession::getGoalDurationSec).sum();
+
         double achievementRate = totalTargetSec > 0
                 ? Math.min((double) totalFocusSec / totalTargetSec * 100, 100.0)
                 : 0.0;
 
-        //적중률 계산
-        double accuracyRate = calcAccuracyRate(user.getId(), counted);
+        // 적중률
+        double accuracyRate = calcAccuracyRate(user.getId(), counted, baseDate);
 
         Insight insight = Insight.from(achievementRate, accuracyRate);
 
-        // DailyReport 업데이트 (없으면 생성)
         DailyReport report = dailyReportRepository
                 .findByUserIdAndReportDate(user.getId(), baseDate)
                 .orElseGet(() -> DailyReport.create(user, baseDate));
 
         report.update(totalFocusSec, totalTargetSec, achievementRate, accuracyRate, insight);
+
+        System.out.println("========= 저장 전 값 확인 =========");
+        System.out.println("totalFocusSec: " + totalFocusSec);
+        System.out.println("totalTargetSec: " + totalTargetSec);
+        System.out.println("achievementRate: " + achievementRate);
+        System.out.println("accuracyRate: " + accuracyRate);
+        System.out.println("insight: " + insight);
+        System.out.println("====================================");
+
         dailyReportRepository.save(report);
     }
 
-    private double calcAccuracyRate(Long userId, List<FocusSession> sessions) {
+    private double calcAccuracyRate(Long userId, List<FocusSession> sessions, LocalDate baseDate) {
         try {
             PeakTimePrediction prediction = peakTimePredictionRepository
-                    .findTopByUserIdOrderByBaseDateDesc(userId)
+                    .findTopByUserIdAndBaseDateLessThanEqualOrderByBaseDateDesc(userId, baseDate)
                     .orElse(null);
 
             if (prediction == null) return 0.0;
 
-            List<PeakWindowJson> windows = objectMapper.readValue(
-                    prediction.getWindowJson(),
-                    new TypeReference<List<PeakWindowJson>>() {});
+            List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
+            if (windows.isEmpty()) return 0.0;
 
-            int totalPeakTargetSec = windows.size() * PEAK_WINDOW_MINUTES * 60;
+            List<FocusSessionSlotCalculator.TimeRange> mergedRanges = mergePeakWindows(windows);
+
+            int totalPeakTargetSec = slotCalculator.calcTotalPeakTargetSecByRanges(mergedRanges);
             if (totalPeakTargetSec == 0) return 0.0;
 
-            int totalPeakActualSec = slotCalculator.calcTotalPeakOverlapSec(windows, sessions, PEAK_WINDOW_MINUTES);
+            int totalPeakActualSec = slotCalculator.calcTotalPeakOverlapSecByRanges(mergedRanges, sessions);
 
             return Math.min((double) totalPeakActualSec / totalPeakTargetSec * 100, 100.0);
 
         } catch (Exception e) {
-            log.warn("적중률 계산 실패 userId={}", userId, e);
+            log.warn("적중률 계산 실패 userId={}, date={}", userId, baseDate, e);
             return 0.0;
         }
+    }
+
+    private List<PeakWindowJson> parseWindows(String windowJson) throws Exception {
+        String trimmed = windowJson == null ? "" : windowJson.trim();
+        if (trimmed.isEmpty()) return List.of();
+
+        if (trimmed.startsWith("[")) {
+            return objectMapper.readValue(trimmed, new TypeReference<List<PeakWindowJson>>() {});
+        }
+
+        PeakTimeAiStoredJson wrapper = objectMapper.readValue(trimmed, PeakTimeAiStoredJson.class);
+        return wrapper.top_peak_times() == null ? List.of() : wrapper.top_peak_times();
+    }
+
+    private List<FocusSessionSlotCalculator.TimeRange> mergePeakWindows(List<PeakWindowJson> windows) {
+        List<FocusSessionSlotCalculator.TimeRange> ranges = new ArrayList<>();
+
+        for (PeakWindowJson w : windows) {
+            if (w == null || w.hour() == null || w.duration() == null) continue;
+
+            LocalTime start = toLocalTime(w.hour());
+            int durationMinutes = (int) Math.round(w.duration() * 60.0);
+            if (durationMinutes <= 0) continue;
+
+            LocalTime end = start.plusMinutes(durationMinutes);
+            ranges.add(new FocusSessionSlotCalculator.TimeRange(start, end));
+        }
+
+        if (ranges.isEmpty()) return List.of();
+
+        ranges.sort(Comparator.comparing(FocusSessionSlotCalculator.TimeRange::start));
+
+        List<FocusSessionSlotCalculator.TimeRange> merged = new ArrayList<>();
+        FocusSessionSlotCalculator.TimeRange cur = ranges.get(0);
+
+        for (int i = 1; i < ranges.size(); i++) {
+            FocusSessionSlotCalculator.TimeRange next = ranges.get(i);
+
+            if (!next.start().isAfter(cur.end())) {
+                LocalTime newEnd = next.end().isAfter(cur.end()) ? next.end() : cur.end();
+                cur = new FocusSessionSlotCalculator.TimeRange(cur.start(), newEnd);
+            } else {
+                merged.add(cur);
+                cur = next;
+            }
+        }
+        merged.add(cur);
+
+        return merged;
+    }
+
+    private LocalTime toLocalTime(Double hour) {
+        int h = hour.intValue();
+        int m = (Math.abs(hour - h) < 1e-9) ? 0 : 30;
+        return LocalTime.of(h, m);
     }
 }

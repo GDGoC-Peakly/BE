@@ -8,6 +8,8 @@ import java.util.Optional;
 public interface PeakTimePredictionRepository extends JpaRepository<PeakTimePrediction, Long> {
 
     // 유저의 가장 최근 예측값 조회
-    Optional<PeakTimePrediction> findTopByUserIdOrderByBaseDateDesc(Long userId);
+    //Optional<PeakTimePrediction> findTopByUserIdOrderByBaseDateDesc(Long userId);
+
+    Optional<PeakTimePrediction> findTopByUserIdAndBaseDateLessThanEqualOrderByBaseDateDesc(Long userId, LocalDate baseDate);
 }
 

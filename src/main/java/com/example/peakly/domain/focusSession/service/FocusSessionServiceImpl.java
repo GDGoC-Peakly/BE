@@ -18,6 +18,7 @@ import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
 import com.example.peakly.domain.focusSession.repository.SessionPauseRepository;
 import com.example.peakly.domain.report.service.daily.DailyReportUpdateService;
 import com.example.peakly.domain.report.service.daily.DailyReportUpdateServiceImpl;
+import com.example.peakly.domain.report.util.ReportingDateUtil;
 import com.example.peakly.domain.user.entity.User;
 import com.example.peakly.domain.user.repository.UserRepository;
 import com.example.peakly.global.apiPayload.code.status.CategoryErrorStatus;
@@ -199,6 +200,8 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         LocalDateTime endedAt = LocalDateTime.now();
 
+        session.markRecorded(req.isRecorded());
+
         if (session.getSessionStatus() == SessionStatus.RUNNING) {
             accumulateRunningFocusSec(session, sessionId, endedAt);
             session.end(endedAt, COUNTED_THRESHOLD_SEC);
@@ -237,10 +240,8 @@ public class FocusSessionServiceImpl implements FocusSessionService {
             }
         }
 
-        session.markRecorded(req.isRecorded());
-
-        User user = session.getUser();
-        dailyReportUpdateService.updateReport(user, session.getBaseDate());
+        LocalDate reportDate = ReportingDateUtil.reportingDateOf(endedAt);
+        dailyReportUpdateService.updateReport(session.getUser(), reportDate);
 
         return new FocusSessionEndResponse(
                 session.getId(),

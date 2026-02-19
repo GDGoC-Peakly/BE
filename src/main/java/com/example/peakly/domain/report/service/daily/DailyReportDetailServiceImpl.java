@@ -3,6 +3,7 @@ package com.example.peakly.domain.report.service.daily;
 import com.example.peakly.domain.focusSession.entity.FocusSession;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
+import com.example.peakly.domain.peakTimePrediction.dto.response.PeakTimeAiStoredJson;
 import com.example.peakly.domain.peakTimePrediction.dto.response.PeakWindowJson;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
 import com.example.peakly.domain.peakTimePrediction.repository.PeakTimePredictionRepository;
@@ -14,7 +15,6 @@ import com.example.peakly.domain.report.util.FocusSessionSlotCalculator;
 import com.example.peakly.global.apiPayload.code.status.DailyReportErrorStatus;
 import com.example.peakly.global.apiPayload.code.status.PeakTimePredictionErrorStatus;
 import com.example.peakly.global.apiPayload.exception.GeneralException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,19 +23,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DailyReportDetailServiceImpl implements DailyReportDetailService {
 
-    // AI 코드 session_hours = 1.5 기준, 피크 윈도우 1개당 90분 고정
-    private static final int PEAK_WINDOW_MINUTES = 90; // TODO : AI 반환값 확정되면 수정
     private static final int SLOT_MINUTES = 30;
 
-    private final DailyReportDetailRepository detailRepository;
+    private final DailyReportDetailRepository dailyReportRepository;
     private final PeakTimePredictionRepository peakTimeRepository;
     private final FocusSessionRepository focusSessionRepository;
     private final FocusSessionSlotCalculator slotCalculator;
@@ -44,44 +41,128 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
 
     @Override
     public DailyReportDetailResponse getDailyReport(Long userId, LocalDate date) {
-        DailyReport report = detailRepository.findByUserIdAndReportDate(userId, date)
-                .orElseThrow(() -> new GeneralException(DailyReportErrorStatus.DAILY_REPORT_NOT_FOUND));
 
-        // 피크 타임 예측 조회
-        PeakTimePrediction prediction = peakTimeRepository.findTopByUserIdOrderByBaseDateDesc(userId)
+        LocalDate slotDate = date;
+        LocalDate statsDate = date.minusDays(1);
+
+        PeakTimePrediction prediction = peakTimeRepository
+                .findTopByUserIdAndBaseDateLessThanEqualOrderByBaseDateDesc(userId, slotDate)
                 .orElseThrow(() -> new GeneralException(PeakTimePredictionErrorStatus.PREDICTION_NOT_FOUND));
 
-        List<FocusSession> sessions = focusSessionRepository
-                .findByUser_IdAndBaseDateAndSessionStatus(userId, date, SessionStatus.ENDED);
+        List<FocusSession> slotSessions = focusSessionRepository
+                .findByUser_IdAndBaseDateAndSessionStatus(userId, slotDate, SessionStatus.ENDED);
 
-        // 30분 단위 슬롯 생성
-        List<DailyReportDetailResponse.TimeSlotDto> timeSlots = create30MinSlots(prediction.getWindowJson(), sessions);
+        List<FocusSession> countedSlotSessions = slotSessions.stream()
+                .filter(FocusSession::isCountedInStats)
+                .toList();
 
-        return reportConverter.toDetailResponse(report, timeSlots);
+        List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
+        List<FocusSessionSlotCalculator.TimeRange> mergedRanges = mergePeakWindows(windows);
+        List<DailyReportDetailResponse.TimeSlotDto> timeSlots =
+                createSlotsFromRanges(mergedRanges, countedSlotSessions);
+
+        int slotTotalFocusMin = timeSlots.stream()
+                .mapToInt(ts -> ts.actualMinutes() == null ? 0 : ts.actualMinutes())
+                .sum();
+
+        int slotTotalTargetMin = timeSlots.stream()
+                .mapToInt(ts -> ts.targetMinutes() == null ? 0 : ts.targetMinutes())
+                .sum();
+
+        DailyReport statsReport = dailyReportRepository
+                .findByUserIdAndReportDate(userId, statsDate)
+                .orElse(null);
+
+        return reportConverter.toDetailResponse(
+                slotDate,
+                slotDate.getDayOfWeek().name(),
+                statsDate,
+                statsReport,
+                timeSlots,
+                slotTotalFocusMin,
+                slotTotalTargetMin
+        );
     }
 
-    private List<DailyReportDetailResponse.TimeSlotDto> create30MinSlots(
-            String windowJson, List<FocusSession> sessions) {
+    private List<PeakWindowJson> parseWindows(String windowJson) {
         try {
-            List<PeakWindowJson> top3Windows = objectMapper.readValue(
-                    windowJson, new TypeReference<List<PeakWindowJson>>() {});
+            if (windowJson == null) return List.of();
+            String trimmed = windowJson.trim();
+            if (trimmed.isEmpty()) return List.of();
 
-            List<DailyReportDetailResponse.TimeSlotDto> slots = new ArrayList<>();
-
-            for (PeakWindowJson window : top3Windows) {
-                int elapsed = 0;
-                while (elapsed < PEAK_WINDOW_MINUTES) {
-                    LocalTime slotStart = LocalTime.of(window.hour(), 0).plusMinutes(elapsed);
-                    int actualMin = slotCalculator.calcActualMinInSlot(sessions, slotStart);
-                    // 슬롯 절대 시간 계산
-                    slots.add(reportConverter.toTimeSlotDto(slotStart, actualMin, SLOT_MINUTES));
-                    elapsed += SLOT_MINUTES;
-                }
+            if (trimmed.startsWith("[")) {
+                return objectMapper.readValue(trimmed, new TypeReference<List<PeakWindowJson>>() {});
             }
-            return slots;
 
-        } catch (JsonProcessingException e) {
+            PeakTimeAiStoredJson wrapper = objectMapper.readValue(trimmed, PeakTimeAiStoredJson.class);
+            return wrapper.top_peak_times() == null ? List.of() : wrapper.top_peak_times();
+
+        } catch (Exception e) {
             throw new GeneralException(DailyReportErrorStatus.REPORT_JSON_PARSING_ERROR);
         }
+    }
+
+    private List<FocusSessionSlotCalculator.TimeRange> mergePeakWindows(List<PeakWindowJson> windows) {
+        if (windows == null || windows.isEmpty()) return List.of();
+
+        List<FocusSessionSlotCalculator.TimeRange> ranges = new ArrayList<>();
+        for (PeakWindowJson w : windows) {
+            if (w == null || w.hour() == null || w.duration() == null) continue;
+
+            LocalTime start = toLocalTime(w.hour());
+            int durationMinutes = (int) Math.round(w.duration() * 60.0);
+            if (durationMinutes <= 0) continue;
+
+            LocalTime end = start.plusMinutes(durationMinutes);
+            ranges.add(new FocusSessionSlotCalculator.TimeRange(start, end));
+        }
+        if (ranges.isEmpty()) return List.of();
+
+        ranges.sort(Comparator.comparing(FocusSessionSlotCalculator.TimeRange::start));
+
+        List<FocusSessionSlotCalculator.TimeRange> merged = new ArrayList<>();
+        FocusSessionSlotCalculator.TimeRange cur = ranges.get(0);
+
+        for (int i = 1; i < ranges.size(); i++) {
+            FocusSessionSlotCalculator.TimeRange next = ranges.get(i);
+
+            if (!next.start().isAfter(cur.end())) { // 겹치거나 이어짐
+                LocalTime newEnd = next.end().isAfter(cur.end()) ? next.end() : cur.end();
+                cur = new FocusSessionSlotCalculator.TimeRange(cur.start(), newEnd);
+            } else {
+                merged.add(cur);
+                cur = next;
+            }
+        }
+        merged.add(cur);
+        return merged;
+    }
+
+    private List<DailyReportDetailResponse.TimeSlotDto> createSlotsFromRanges(
+            List<FocusSessionSlotCalculator.TimeRange> ranges,
+            List<FocusSession> sessions
+    ) {
+        if (ranges == null || ranges.isEmpty()) return List.of();
+
+        // time order 유지 + 중복 제거
+        Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> slotMap = new LinkedHashMap<>();
+
+        for (FocusSessionSlotCalculator.TimeRange r : ranges) {
+            LocalTime t = r.start();
+
+            while (t.isBefore(r.end())) {
+                int actualMin = slotCalculator.calcActualMinInSlot(sessions, t);
+                slotMap.putIfAbsent(t, reportConverter.toTimeSlotDto(t, actualMin, SLOT_MINUTES));
+                t = t.plusMinutes(SLOT_MINUTES);
+            }
+        }
+
+        return new ArrayList<>(slotMap.values());
+    }
+
+    private LocalTime toLocalTime(Double hour) {
+        int h = hour.intValue();
+        int m = (Math.abs(hour - h) < 1e-9) ? 0 : 30;
+        return LocalTime.of(h, m);
     }
 }
