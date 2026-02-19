@@ -254,7 +254,6 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         );
     }
 
-
     private LocalDateTime resolveLastRunningStartedAt(Long sessionId, LocalDateTime sessionStartedAt) {
         return sessionPauseRepository
                 .findLatestResumedPause(sessionId)
@@ -284,5 +283,4 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         session.addFocusSec(deltaSec);
     }
-
 }
