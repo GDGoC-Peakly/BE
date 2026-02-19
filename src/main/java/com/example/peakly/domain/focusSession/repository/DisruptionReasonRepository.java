@@ -10,4 +10,6 @@ public interface DisruptionReasonRepository extends JpaRepository<DisruptionReas
     List<DisruptionReason> findAllByActiveTrueOrderBySortOrderAsc();
 
     List<DisruptionReason> findAllByOrderBySortOrderAsc();
+
+    List<DisruptionReason> findAllByIdIn(List<Long> ids);
 }
