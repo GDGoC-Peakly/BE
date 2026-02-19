@@ -67,7 +67,7 @@ class FocusSessionServiceImplTest {
         when(sessionPauseRepository.existsByFocusSession_IdAndResumedAtIsNull(sessionId))
                 .thenReturn(false);
 
-        when(sessionPauseRepository.findLatestResumedPause(sessionId))
+        when(sessionPauseRepository.findTopByFocusSession_IdAndResumedAtIsNotNullOrderByResumedAtDesc(sessionId))
                 .thenReturn(Optional.empty());
 
         when(session.getId()).thenReturn(sessionId);
