@@ -73,7 +73,7 @@ public class PeaktimeFeedbackServiceImpl implements PeaktimeFeedbackService {
             throw new GeneralException(FocusSessionErrorStatus.INVALID_SESSION_STATE);
         }
 
-        PeaktimeFeedback feedback = peaktimeFeedbackRepository.findByFocusSession_Id(sessionId)
+        PeaktimeFeedback feedback = peaktimeFeedbackRepository.findByFocusSessionIdForUpdate(sessionId)
                 .orElseThrow(() -> new GeneralException(FeedbackErrorStatus.FEEDBACK_NOT_FOUND));
 
         if (feedback.getFocusScore() > 2) {
