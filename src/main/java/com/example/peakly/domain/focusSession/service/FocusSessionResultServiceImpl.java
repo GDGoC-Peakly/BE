@@ -26,12 +26,8 @@ public class FocusSessionResultServiceImpl implements FocusSessionResultService 
 
     @Override
     public FocusSessionResultResponse getResult(Long userId,  Long sessionId) {
-        FocusSession session = focusSessionRepository.findById(sessionId)
+        FocusSession session = focusSessionRepository.findByIdAndUser_Id(sessionId, userId)
                 .orElseThrow(() -> new GeneralException(FocusSessionErrorStatus.SESSION_NOT_FOUND));
-
-        if (!session.getUser().getId().equals(userId)) {
-            throw new GeneralException(FocusSessionErrorStatus.SESSION_FORBIDDEN);
-        }
 
         if (session.getSessionStatus() != SessionStatus.ENDED) {
             throw new GeneralException(FocusSessionErrorStatus.SESSION_NOT_ENDED);
