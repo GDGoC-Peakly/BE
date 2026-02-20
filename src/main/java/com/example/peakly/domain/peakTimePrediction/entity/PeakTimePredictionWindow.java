@@ -67,38 +67,25 @@ public class PeakTimePredictionWindow extends BaseEntity {
         return w;
     }
 
-    public static PeakTimePredictionWindow fromAi(
+    public static PeakTimePredictionWindow of(
             PeakTimePrediction prediction,
             int rank,
-            double hour,
-            double durationHours,
+            int startMinuteOfDay,
+            int durationMinutes,
             double scoreRaw,
             double maxRaw
     ) {
-        if (prediction == null) throw new IllegalArgumentException("prediction은 필수입니다.");
-        if (rank <= 0) throw new IllegalArgumentException("rank는 1 이상이어야 합니다.");
-        if (hour < 0.0 || hour > 24.0) throw new IllegalArgumentException("hour 범위 오류");
-        if (durationHours <= 0.0) throw new IllegalArgumentException("durationHours는 0보다 커야 합니다.");
-
-        int startMinuteOfDay = (int) Math.round(hour * 60.0);
-        int durationMinutes = (int) Math.round(durationHours * 60.0);
-
-        if (startMinuteOfDay < 0) startMinuteOfDay = 0;
-        if (startMinuteOfDay > 24 * 60) startMinuteOfDay = 24 * 60;
-        if (durationMinutes <= 0) durationMinutes = 1;
-
-        double denom = (maxRaw > 0.0) ? maxRaw : 1.0;
-        double score01 = scoreRaw / denom;
-        if (score01 < 0.0) score01 = 0.0;
-        if (score01 > 1.0) score01 = 1.0;
-
         PeakTimePredictionWindow w = new PeakTimePredictionWindow();
         w.prediction = prediction;
         w.rank = rank;
         w.startMinuteOfDay = startMinuteOfDay;
         w.durationMinutes = durationMinutes;
         w.scoreRaw = scoreRaw;
-        w.score01 = score01;
+        w.score01 = (maxRaw <= 0.0) ? 0.0 : Math.min(1.0, scoreRaw / maxRaw);
         return w;
+    }
+
+    public void attach(PeakTimePrediction prediction) {
+        this.prediction = prediction;
     }
 }

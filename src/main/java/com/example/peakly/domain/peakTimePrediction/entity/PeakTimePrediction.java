@@ -74,8 +74,11 @@ public class PeakTimePrediction extends BaseEntity {
 
     public void replaceWindows(List<PeakTimePredictionWindow> newWindows) {
         this.windows.clear();
-        if (newWindows != null) {
-            this.windows.addAll(newWindows);
+        if (newWindows == null) return;
+
+        for (PeakTimePredictionWindow w : newWindows) {
+            w.attach(this);
+            this.windows.add(w);
         }
     }
 

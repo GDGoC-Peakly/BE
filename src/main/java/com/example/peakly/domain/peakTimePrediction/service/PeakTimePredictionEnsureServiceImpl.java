@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -58,17 +59,14 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
         }
 
         try {
+            LocalDateTime now = LocalDateTime.now();
+
             PeakTimePrediction prediction = predictionRepository
                     .findByUser_IdAndBaseDate(userId, baseDate)
-                    .orElseGet(() -> PeakTimePrediction.create(user, baseDate, /*modelVersion*/ "v1.0.0", LocalDateTime.now()));
+                    .orElseGet(() -> PeakTimePrediction.create(user, baseDate, "v1.0.0", now));
 
-            prediction.updateComputedAt(LocalDateTime.now());
+            prediction.updateComputedAt(now);
             prediction.updateModelVersion("v1.0.0");
-
-            PeakTimePrediction saved = predictionRepository.save(prediction);
-
-
-            windowRepository.deleteAllByPrediction_Id(saved.getId());
 
             double maxRaw = resp.top_peak_times().stream()
                     .filter(x -> x != null && x.score() != null)
@@ -76,25 +74,33 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
                     .max()
                     .orElse(1.0);
 
-            List<PeakTimePredictionWindow> windows = new java.util.ArrayList<>();
+            List<PeakTimePredictionWindow> newWindows = new ArrayList<>();
             int rank = 1;
+
             for (var x : resp.top_peak_times()) {
                 if (x == null || x.hour() == null || x.duration() == null || x.score() == null) continue;
 
-                windows.add(PeakTimePredictionWindow.fromAi(
-                        saved,
+                int startMinute = toMinuteOfDayRounded(x.hour());
+                int durationMin = toMinutesRounded(x.duration());
+                if (durationMin <= 0) continue;
+
+                newWindows.add(PeakTimePredictionWindow.of(
+                        prediction,
                         rank++,
-                        x.hour(),
-                        x.duration(),
+                        startMinute,
+                        durationMin,
                         x.score(),
                         maxRaw
                 ));
             }
 
-            windows.sort(Comparator.comparingInt(PeakTimePredictionWindow::getStartMinuteOfDay));
-            windowRepository.saveAll(windows);
+            newWindows.sort(Comparator.comparingInt(PeakTimePredictionWindow::getStartMinuteOfDay));
 
-            return saved;
+            newWindows = dropOverlapsKeepEarlier(newWindows);
+
+            prediction.replaceWindows(newWindows);
+
+            return predictionRepository.save(prediction);
 
         } catch (DataIntegrityViolationException e) {
             return fallbackReader.findOrFail(userId, baseDate);
@@ -130,5 +136,34 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
                 saved.getComputedAt(),
                 windows
         );
+    }
+
+    private int toMinuteOfDayRounded(Double hour) {
+        int m = (int) Math.round(hour * 60.0);
+        if (m < 0) m = 0;
+        if (m >= 24 * 60) m = 24 * 60 - 1;
+        return m;
+    }
+
+    private int toMinutesRounded(Double durationHours) {
+        return (int) Math.round(durationHours * 60.0);
+    }
+
+    // 겹치면 뒤(나중) 윈도우를 버리고, 먼저 나온 윈도우를 유지
+    private List<PeakTimePredictionWindow> dropOverlapsKeepEarlier(List<PeakTimePredictionWindow> sorted) {
+        List<PeakTimePredictionWindow> out = new ArrayList<>();
+        int lastEnd = -1;
+
+        for (PeakTimePredictionWindow w : sorted) {
+            int s = w.getStartMinuteOfDay();
+            int e = s + w.getDurationMinutes();
+            if (s < lastEnd) {
+                // 겹치면 버림
+                continue;
+            }
+            out.add(w);
+            lastEnd = e;
+        }
+        return out;
     }
 }
