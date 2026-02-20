@@ -4,6 +4,7 @@ import com.example.peakly.domain.category.entity.Category;
 import com.example.peakly.domain.category.entity.MajorCategory;
 import com.example.peakly.domain.category.repository.CategoryRepository;
 import com.example.peakly.domain.category.repository.MajorCategoryRepository;
+import com.example.peakly.domain.dailySleep.repository.DailySleepLogRepository;
 import com.example.peakly.domain.focusSession.command.FocusSessionStartCommand;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionEndRequest;
 import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartRequest;
@@ -47,6 +48,7 @@ public class FocusSessionServiceImpl implements FocusSessionService {
     private final CategoryRepository categoryRepository;
     private final SessionPauseRepository sessionPauseRepository;
     private final DailyReportUpdateService dailyReportUpdateService;
+    private final DailySleepLogRepository dailySleepLogRepository;
 
     @Transactional
     public FocusSessionStartResponse start(Long userId, FocusSessionStartRequest req) {
@@ -84,6 +86,12 @@ public class FocusSessionServiceImpl implements FocusSessionService {
 
         LocalDateTime startedAt = LocalDateTime.now();
         LocalDate baseDate = calcBaseDate(startedAt);
+
+        boolean hasCheckin = dailySleepLogRepository.existsByUser_IdAndBaseDate(userId, baseDate)
+                || dailySleepLogRepository.existsByUser_IdAndBaseDate(userId, baseDate.plusDays(1));;
+        if (!hasCheckin) {
+            throw new GeneralException(FocusSessionErrorStatus.DAILY_CHECKIN_REQUIRED);
+        }
 
         FocusSessionStartCommand cmd = new FocusSessionStartCommand(
                 req.majorCategoryId(),

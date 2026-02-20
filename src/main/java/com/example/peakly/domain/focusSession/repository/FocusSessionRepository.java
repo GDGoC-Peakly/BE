@@ -42,6 +42,12 @@ public interface FocusSessionRepository extends JpaRepository<FocusSession, Long
             Pageable pageable
     );
 
-
     List<FocusSession> findByUser_IdAndBaseDateAndSessionStatus(Long userId, LocalDate baseDate, SessionStatus status);
+
+    List<FocusSession> findByUser_IdAndBaseDateBetweenAndSessionStatus(
+            Long userId,
+            LocalDate from,
+            LocalDate to,
+            SessionStatus sessionStatus
+    );
 }

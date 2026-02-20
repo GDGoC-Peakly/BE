@@ -96,6 +96,12 @@ public enum FocusSessionErrorStatus implements BaseErrorCode {
             "이미 집중도 평가가 등록된 세션입니다."
     ),
 
+    DAILY_CHECKIN_REQUIRED(
+            HttpStatus.CONFLICT,
+            "SESSION409_006",
+            "세션을 시작하려면 오늘의 데일리 체크인이 필요합니다."
+    ),
+
     // =========================
     // 500 INTERNAL_SERVER_ERROR
     // =========================
