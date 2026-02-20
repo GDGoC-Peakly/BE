@@ -13,8 +13,8 @@ public record PeakTimePredictionRefreshResponse(
 ) {
     public record WindowDTO(
             int rank,
-            LocalDateTime startAt,
-            LocalDateTime endAt,
+            LocalDateTime startedAt,
+            LocalDateTime endedAt,
             double scoreRaw,
             double score01
     ) {}

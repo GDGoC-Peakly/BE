@@ -21,15 +21,15 @@ public record SessionPeakTimeOverlapsResponse(
 
     public record WindowDTO(
             int rank,
-            LocalDateTime startAt,
-            LocalDateTime endAt,
+            LocalDateTime startedAt,
+            LocalDateTime endedAt,
             double scoreRaw,
             double score01
     ) {}
 
     public record OverlapDTO(
             int rank,
-            LocalDateTime startAt,
-            LocalDateTime endAt
+            LocalDateTime startedAt,
+            LocalDateTime endedAt
     ) {}
 }
