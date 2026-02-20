@@ -18,7 +18,7 @@ public class PeakTimeAiClientConfig {
     @Value("${peaktime.ai.base-url}")
     private String aiBaseUrl;
 
-    @Bean(name = "peakTimeAiRestClient")
+    @Bean(name = "peakTimeAiHttpClient")
     public RestClient peakTimeAiRestClient() {
 
         RequestConfig requestConfig = RequestConfig.custom()

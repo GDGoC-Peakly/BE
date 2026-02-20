@@ -17,16 +17,19 @@ import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class PeakTimeAiRestClient implements PeakTimeAiClient {
 
-    private final @Qualifier("peakTimeAiRestClient") RestClient restClient;
-    private final ObjectMapper objectMapper;
+    private final RestClient restClient;
+
+    public PeakTimeAiRestClient(
+            @Qualifier("peakTimeAiHttpClient") RestClient restClient
+    ) {
+        this.restClient = restClient;
+    }
 
     @Override
     public PeakTimePredictResponse predict(PeakTimePredictRequest req) {
         try {
-            log.info("AI predict request={}", safeJson(req));
             return restClient.post()
                     .uri("/predict")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -40,14 +43,6 @@ public class PeakTimeAiRestClient implements PeakTimeAiClient {
         } catch (RestClientException e) {
             log.error("AI 통신 실패", e);
             throw new GeneralException(PeakTimePredictionErrorStatus.AI_SERVER_ERROR);
-        }
-    }
-
-    private String safeJson(Object req) {
-        try {
-            return objectMapper.writeValueAsString(req);
-        } catch (JsonProcessingException e) {
-            return "<json-serialize-failed:" + e.getMessage() + ">";
         }
     }
 }
