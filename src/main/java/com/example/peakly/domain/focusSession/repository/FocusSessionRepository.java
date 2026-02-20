@@ -50,4 +50,17 @@ public interface FocusSessionRepository extends JpaRepository<FocusSession, Long
             LocalDate to,
             SessionStatus sessionStatus
     );
+
+    @Query("""
+        select coalesce(sum(fs.totalFocusSec), 0)
+        from FocusSession fs
+        where fs.user.id = :userId
+          and fs.baseDate = :baseDate
+          and fs.sessionStatus = :status
+    """)
+    Long sumTotalFocusSecByUserIdAndBaseDateAndStatus(
+            @Param("userId") Long userId,
+            @Param("baseDate") LocalDate baseDate,
+            @Param("status") SessionStatus status
+    );
 }

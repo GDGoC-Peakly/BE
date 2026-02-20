@@ -17,4 +17,6 @@ public interface DailySleepLogRepository extends JpaRepository<DailySleepLog, Lo
 
     boolean existsByUser_IdAndBaseDate(Long userId, LocalDate baseDate);
 
+    Optional<DailySleepLog> findByUser_IdAndBaseDate(Long userId, LocalDate baseDate);
+
 }
