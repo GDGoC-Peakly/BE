@@ -26,7 +26,6 @@ public class PeakTimePredictRequestProviderImpl implements PeakTimePredictReques
 
     private static final int WINDOW_DAYS = 7;
 
-    // “피크타임은 무조건 내려야 함”을 위한 최소 보강용 기본값(중립값)
     private static final double DEFAULT_SLEEP_FEELING = 3.5;
     private static final int DEFAULT_FATIGUE_LEVEL = 3;
 
@@ -98,7 +97,10 @@ public class PeakTimePredictRequestProviderImpl implements PeakTimePredictReques
         );
     }
 
-    private void ensureAtLeastTwoRecords(List<PeakTimePredictRequest.RecentRecord> recent, LocalDate baseDate) {
+    private void ensureAtLeastTwoRecords(
+            List<PeakTimePredictRequest.RecentRecord> recent,
+            LocalDate baseDate
+    ) {
         if (recent.size() >= 2) return;
 
         if (recent.isEmpty()) {
@@ -117,11 +119,44 @@ public class PeakTimePredictRequestProviderImpl implements PeakTimePredictReques
 
         PeakTimePredictRequest.RecentRecord only = recent.get(0);
 
-        Double sleepFeeling = only.sleep_feeling();
-        Integer fatigueLevel = only.fatigue_level();
+        double sleepFeeling = (only.sleep_feeling() != null) ? only.sleep_feeling() : DEFAULT_SLEEP_FEELING;
+        int fatigueLevel = (only.fatigue_level() != null) ? only.fatigue_level() : DEFAULT_FATIGUE_LEVEL;
 
-        recent.add(0, new PeakTimePredictRequest.RecentRecord(
-                baseDate.minusDays(1).toString(),
+        LocalDate onlyDate;
+        try {
+            onlyDate = LocalDate.parse(only.date());
+        } catch (Exception e) {
+            onlyDate = baseDate;
+        }
+
+        LocalDate d0 = baseDate.minusDays(1);
+        LocalDate d1 = baseDate;
+
+        if (onlyDate.equals(d0)) {
+            recent.add(new PeakTimePredictRequest.RecentRecord(
+                    d1.toString(),
+                    sleepFeeling,
+                    fatigueLevel
+            ));
+            return;
+        }
+
+        if (onlyDate.equals(d1)) {
+            recent.add(0, new PeakTimePredictRequest.RecentRecord(
+                    d0.toString(),
+                    sleepFeeling,
+                    fatigueLevel
+            ));
+            return;
+        }
+
+        LocalDate synthetic = d1;
+        while (synthetic.equals(onlyDate)) {
+            synthetic = synthetic.minusDays(1);
+        }
+
+        recent.add(new PeakTimePredictRequest.RecentRecord(
+                synthetic.toString(),
                 sleepFeeling,
                 fatigueLevel
         ));
