@@ -11,12 +11,12 @@ import org.springframework.http.HttpStatus;
 public enum DailyErrorStatus implements BaseErrorCode {
 
     // =========================
-    // 400 CONFLICT
+    // 400 BAD_REQUEST
     // =========================
 
     INVALID_BASE_DATE(
             HttpStatus.BAD_REQUEST,
-            "SESSION409_001",
+            "SESSION400_001",
             "해결할 수 없는 base date입니다."
     ),
 
