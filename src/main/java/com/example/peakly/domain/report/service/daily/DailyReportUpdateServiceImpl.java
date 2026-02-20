@@ -78,8 +78,10 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
             if (prediction == null) return 0.0;
 
-            List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
-            if (windows.isEmpty()) return 0.0;
+            // TODO: 엔티티에 맞춰 수정
+            List<PeakWindowJson> windows = null;
+//            List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
+//            if (windows.isEmpty()) return 0.0;
 
             List<FocusSessionSlotCalculator.DateTimeRange> peakRanges = toPeakRanges(baseDate, windows);
             if (peakRanges.isEmpty()) return 0.0;

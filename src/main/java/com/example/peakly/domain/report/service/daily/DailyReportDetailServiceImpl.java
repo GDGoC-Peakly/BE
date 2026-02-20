@@ -48,7 +48,7 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
 
         PeakTimePrediction prediction = peakTimeRepository
                 .findTopByUserIdAndBaseDateLessThanEqualOrderByBaseDateDesc(userId, slotDate)
-                .orElseThrow(() -> new GeneralException(PeakTimePredictionErrorStatus.PREDICTION_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(PeakTimePredictionErrorStatus.PEAKTIME_PREDICTION_NOT_FOUND));
 
         List<FocusSession> slotSessions = focusSessionRepository
                 .findByUser_IdAndBaseDateAndSessionStatus(userId, slotDate, SessionStatus.ENDED);
@@ -57,7 +57,9 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
                 .filter(FocusSession::isCountedInStats)
                 .toList();
 
-        List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
+        // TODO: 엔티티에 맞춰 수정
+        List<PeakWindowJson> windows = null;
+//        List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
         List<FocusSessionSlotCalculator.DateTimeRange> peakRanges = toPeakRanges(slotDate, windows);
 
         List<FocusSessionSlotCalculator.DateTimeRange> sessionRanges = extractSessionRanges(counted);

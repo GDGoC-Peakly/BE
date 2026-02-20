@@ -13,6 +13,8 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -42,11 +44,6 @@ public class PeakTimePrediction extends BaseEntity {
     private LocalDate baseDate;
 
     @NotNull
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name="window_json", columnDefinition="json", nullable=false)
-    private String windowJson;
-
-    @NotNull
     @Column(name = "model_version", nullable = false, length = 50)
     private String modelVersion;
 
@@ -57,4 +54,40 @@ public class PeakTimePrediction extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @OneToMany(mappedBy = "prediction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<PeakTimePredictionWindow> windows = new ArrayList<>();
+
+    public static PeakTimePrediction create(User user, LocalDate baseDate, String modelVersion, LocalDateTime computedAt) {
+        if (user == null) throw new IllegalArgumentException("user는 필수입니다.");
+        if (baseDate == null) throw new IllegalArgumentException("baseDate는 필수입니다.");
+        if (modelVersion == null || modelVersion.isBlank()) throw new IllegalArgumentException("modelVersion은 필수입니다.");
+        if (computedAt == null) throw new IllegalArgumentException("computedAt은 필수입니다.");
+
+        PeakTimePrediction p = new PeakTimePrediction();
+        p.user = user;
+        p.baseDate = baseDate;
+        p.modelVersion = modelVersion;
+        p.computedAt = computedAt;
+        return p;
+    }
+
+    public void replaceWindows(List<PeakTimePredictionWindow> newWindows) {
+        this.windows.clear();
+        if (newWindows != null) {
+            this.windows.addAll(newWindows);
+        }
+    }
+
+    public void updateComputedAt(LocalDateTime computedAt) {
+        if (computedAt == null) throw new IllegalArgumentException("computedAt은 필수입니다.");
+        this.computedAt = computedAt;
+    }
+
+    public void updateModelVersion(String modelVersion) {
+        if (modelVersion == null || modelVersion.isBlank()) {
+            throw new IllegalArgumentException("modelVersion은 필수입니다.");
+        }
+        this.modelVersion = modelVersion;
+    }
 }
