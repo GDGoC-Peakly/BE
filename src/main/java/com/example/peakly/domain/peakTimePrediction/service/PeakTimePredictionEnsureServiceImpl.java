@@ -34,6 +34,8 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
     private final PeakTimePredictRequestProvider requestProvider;
     private final PeakTimeAiClient aiClient;
 
+    private final PeakTimePredictionFallbackReader fallbackReader;
+
     @Override
     @Transactional
     public PeakTimePrediction ensure(Long userId, LocalDate baseDate) {
@@ -95,8 +97,7 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
             return saved;
 
         } catch (DataIntegrityViolationException e) {
-            return predictionRepository.findByUser_IdAndBaseDate(userId, baseDate)
-                    .orElseThrow(() -> new GeneralException(PeakTimePredictionErrorStatus.PREDICTION_UPSERT_FAILED));
+            return fallbackReader.findOrFail(userId, baseDate);
         }
     }
 
