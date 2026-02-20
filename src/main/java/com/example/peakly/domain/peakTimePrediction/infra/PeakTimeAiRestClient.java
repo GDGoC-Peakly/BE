@@ -20,7 +20,7 @@ import org.springframework.web.client.RestClientException;
 @RequiredArgsConstructor
 public class PeakTimeAiRestClient implements PeakTimeAiClient {
 
-    private final @Qualifier("peakTimeAiRestClient") RestClient restClient;
+    private final @Qualifier("peakTimeAiHttpClient") RestClient restClient;
     private final ObjectMapper objectMapper;
 
     @Override
