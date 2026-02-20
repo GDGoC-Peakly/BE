@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.List;
 public class DailyPeakTimeServiceImpl implements DailyPeakTimeService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
+    private static final LocalTime BASE_DATE_CUTOFF = LocalTime.of(5, 0);
 
     private final PeakTimePredictionRepository peakTimePredictionRepository;
     private final PeakTimePredictionWindowRepository peakTimePredictionWindowRepository;
@@ -31,7 +33,9 @@ public class DailyPeakTimeServiceImpl implements DailyPeakTimeService {
     @Transactional(readOnly = true)
     public DailyPeakTimeResponse getDailyPeakTime(Long userId, String baseDateRaw) {
 
-        LocalDate baseDate = parseBaseDateOrToday(baseDateRaw);
+        LocalDateTime now = LocalDateTime.now(ZONE);
+
+        LocalDate baseDate = parseBaseDateOrToday(baseDateRaw, now);
 
         var predictionOpt = peakTimePredictionRepository.findByUser_IdAndBaseDate(userId, baseDate);
 
@@ -72,14 +76,22 @@ public class DailyPeakTimeServiceImpl implements DailyPeakTimeService {
         );
     }
 
-    private LocalDate parseBaseDateOrToday(String raw) {
+    private LocalDate parseBaseDateOrToday(String raw, LocalDateTime now) {
         if (raw == null || raw.isBlank()) {
-            return LocalDate.now(ZONE);
+            return resolveBaseDate(now);
         }
         try {
             return LocalDate.parse(raw);
         } catch (DateTimeParseException e) {
             throw new GeneralException(HomeErrorStatus.INVALID_BASE_DATE);
         }
+    }
+
+    private LocalDate resolveBaseDate(LocalDateTime now) {
+        LocalDate baseDate = now.toLocalDate();
+        if (now.toLocalTime().isBefore(BASE_DATE_CUTOFF)) {
+            baseDate = baseDate.minusDays(1);
+        }
+        return baseDate;
     }
 }

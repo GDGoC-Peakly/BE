@@ -27,6 +27,8 @@ public class HomeSummaryServiceImpl implements HomeSummaryService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
+    private static final LocalTime BASE_DATE_CUTOFF = LocalTime.of(5, 0);
+
     private final DailySleepLogRepository dailySleepLogRepository;
     private final FocusSessionRepository focusSessionRepository;
     private final PeakTimePredictionRepository peakTimePredictionRepository;
@@ -36,9 +38,9 @@ public class HomeSummaryServiceImpl implements HomeSummaryService {
     @Transactional(readOnly = true)
     public HomeSummaryResponse getHome(Long userId, String baseDateRaw) {
 
-        LocalDate baseDate = parseBaseDateOrToday(baseDateRaw);
-
         LocalDateTime now = LocalDateTime.now(ZONE);
+
+        LocalDate baseDate = parseBaseDateOrToday(baseDateRaw, now);
 
         DailySleepLog sleepLog = dailySleepLogRepository.findByUser_IdAndBaseDate(userId, baseDate)
                 .orElseThrow(() -> new GeneralException(HomeErrorStatus.SLEEP_LOG_MISSING));
@@ -68,15 +70,23 @@ public class HomeSummaryServiceImpl implements HomeSummaryService {
         );
     }
 
-    private LocalDate parseBaseDateOrToday(String raw) {
+    private LocalDate parseBaseDateOrToday(String raw, LocalDateTime now) {
         if (raw == null || raw.isBlank()) {
-            return LocalDate.now(ZONE);
+            return resolveBaseDate(now);
         }
         try {
             return LocalDate.parse(raw);
         } catch (DateTimeParseException e) {
             throw new GeneralException(HomeErrorStatus.INVALID_BASE_DATE);
         }
+    }
+
+    private LocalDate resolveBaseDate(LocalDateTime now) {
+        LocalDate baseDate = now.toLocalDate();
+        if (now.toLocalTime().isBefore(BASE_DATE_CUTOFF)) {
+            baseDate = baseDate.minusDays(1);
+        }
+        return baseDate;
     }
 
     private long computeSleepSec(DailySleepLog log) {
