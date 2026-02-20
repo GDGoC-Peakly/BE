@@ -13,6 +13,7 @@ import com.example.peakly.global.apiPayload.code.status.PeakTimePredictionErrorS
 import com.example.peakly.global.apiPayload.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ public class SessionPeakTimeOverlapsServiceImpl implements SessionPeakTimeOverla
     private final PeakTimePredictionWindowRepository peakTimePredictionWindowRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public SessionPeakTimeOverlapsResponse getSessionPeakTimeOverlaps(Long userId, Long sessionId) {
 
         FocusSession session = focusSessionRepository.findById(sessionId)
