@@ -60,7 +60,7 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
         try {
             PeakTimePrediction prediction = predictionRepository
                     .findByUser_IdAndBaseDate(userId, baseDate)
-                    .orElseGet(() -> PeakTimePrediction.create(user, baseDate, /*modelVersion*/ "ai", LocalDateTime.now()));
+                    .orElseGet(() -> PeakTimePrediction.create(user, baseDate, /*modelVersion*/ "v1.0.0", LocalDateTime.now()));
 
             prediction.updateComputedAt(LocalDateTime.now());
             prediction.updateModelVersion("v1.0.0");
