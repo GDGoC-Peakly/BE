@@ -2,6 +2,7 @@ package com.example.peakly.domain.peakTimePrediction.service;
 
 import com.example.peakly.domain.peakTimePrediction.dto.ai.PeakTimePredictRequest;
 import com.example.peakly.domain.peakTimePrediction.dto.ai.PeakTimePredictResponse;
+import com.example.peakly.domain.peakTimePrediction.dto.response.PeakTimePredictionRefreshResponse;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePredictionWindow;
 import com.example.peakly.domain.peakTimePrediction.infra.PeakTimeAiClient;
@@ -60,7 +61,7 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
                     .orElseGet(() -> PeakTimePrediction.create(user, baseDate, /*modelVersion*/ "ai", LocalDateTime.now()));
 
             prediction.updateComputedAt(LocalDateTime.now());
-            prediction.updateModelVersion("ai");
+            prediction.updateModelVersion("v1.0.0");
 
             PeakTimePrediction saved = predictionRepository.save(prediction);
 
@@ -97,5 +98,36 @@ public class PeakTimePredictionEnsureServiceImpl implements PeakTimePredictionEn
             return predictionRepository.findByUser_IdAndBaseDate(userId, baseDate)
                     .orElseThrow(() -> new GeneralException(PeakTimePredictionErrorStatus.PREDICTION_UPSERT_FAILED));
         }
+    }
+
+    @Override
+    @Transactional
+    public PeakTimePredictionRefreshResponse refreshResponse(Long userId, LocalDate baseDate) {
+        PeakTimePrediction saved = refresh(userId, baseDate);
+
+        List<PeakTimePredictionWindow> windowEntities =
+                windowRepository.findAllByPrediction_IdOrderByStartMinuteOfDayAsc(saved.getId());
+
+        List<PeakTimePredictionRefreshResponse.WindowDTO> windows = windowEntities.stream()
+                .map(w -> {
+                    LocalDateTime startAt = baseDate.atStartOfDay().plusMinutes(w.getStartMinuteOfDay());
+                    LocalDateTime endAt = startAt.plusMinutes(w.getDurationMinutes());
+                    return new PeakTimePredictionRefreshResponse.WindowDTO(
+                            w.getRank(),
+                            startAt,
+                            endAt,
+                            w.getScoreRaw(),
+                            w.getScore01()
+                    );
+                })
+                .toList();
+
+        return new PeakTimePredictionRefreshResponse(
+                saved.getId(),
+                saved.getBaseDate(),
+                saved.getModelVersion(),
+                saved.getComputedAt(),
+                windows
+        );
     }
 }

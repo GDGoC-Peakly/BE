@@ -15,4 +15,6 @@ public interface DailySleepLogRepository extends JpaRepository<DailySleepLog, Lo
 
     List<DailySleepLog> findByUser_IdAndBaseDateBetweenOrderByBaseDateAsc(Long userId, LocalDate from, LocalDate to);
 
+    boolean existsByUser_IdAndBaseDate(Long userId, LocalDate baseDate);
+
 }

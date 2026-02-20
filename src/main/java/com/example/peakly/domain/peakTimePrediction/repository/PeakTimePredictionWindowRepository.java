@@ -10,4 +10,5 @@ public interface PeakTimePredictionWindowRepository extends JpaRepository<PeakTi
     List<PeakTimePredictionWindow> findAllByPrediction_IdOrderByStartMinuteOfDayAsc(Long predictionId);
 
     void deleteAllByPrediction_Id(Long predictionId);
+
 }

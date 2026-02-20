@@ -24,6 +24,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PeakTimePredictRequestProviderImpl implements PeakTimePredictRequestProvider {
 
+    private static final int WINDOW_DAYS = 7;
+
+    // “피크타임은 무조건 내려야 함”을 위한 최소 보강용 기본값(중립값)
+    private static final double DEFAULT_SLEEP_FEELING = 3.5;
+    private static final int DEFAULT_FATIGUE_LEVEL = 3;
+
     private final DailySleepLogRepository dailySleepLogRepository;
     private final FocusSessionRepository focusSessionRepository;
     private final InitialDataRepository initialDataRepository;
@@ -31,7 +37,7 @@ public class PeakTimePredictRequestProviderImpl implements PeakTimePredictReques
     @Override
     public PeakTimePredictRequest build(Long userId, LocalDate baseDate) {
 
-        LocalDate from = baseDate.minusDays(6);
+        LocalDate from = baseDate.minusDays(WINDOW_DAYS - 1);
 
         InitialData initial = initialDataRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(
@@ -41,42 +47,48 @@ public class PeakTimePredictRequestProviderImpl implements PeakTimePredictReques
                 dailySleepLogRepository.findByUser_IdAndBaseDateBetweenOrderByBaseDateAsc(
                         userId, from, baseDate);
 
+        Map<LocalDate, Double> sleepScoreByDate =
+                sleepLogs.stream().collect(Collectors.toMap(
+                        DailySleepLog::getBaseDate,
+                        l -> l.getSleepScore().doubleValue(),
+                        (a, b) -> b
+                ));
+
         List<FocusSession> sessions =
                 focusSessionRepository.findByUser_IdAndBaseDateBetweenAndSessionStatus(
                         userId, from, baseDate, SessionStatus.ENDED);
 
-        Map<LocalDate, Double> sleepScoreByDate =
-                sleepLogs.stream().collect(Collectors.toMap(
-                        DailySleepLog::getBaseDate,
-                        l -> l.getSleepScore().doubleValue()
-                ));
-
         Map<LocalDate, Double> fatigueAvgByDate =
                 sessions.stream().collect(Collectors.groupingBy(
                         FocusSession::getBaseDate,
-                        Collectors.averagingInt(s -> (int) s.getFatigueLevel())
+                        Collectors.averagingInt(s -> (int) s.getFatigueLevel()) // byte -> int
                 ));
 
         List<PeakTimePredictRequest.RecentRecord> recent = new ArrayList<>();
 
         for (LocalDate d = from; !d.isAfter(baseDate); d = d.plusDays(1)) {
-
             Double sleepFeeling = sleepScoreByDate.get(d);
-            Double fatigue = fatigueAvgByDate.get(d);
+            Double fatigueAvg = fatigueAvgByDate.get(d);
+
+            if (sleepFeeling == null || fatigueAvg == null) continue;
 
             recent.add(new PeakTimePredictRequest.RecentRecord(
                     d.toString(),
-                    sleepFeeling,                   // float
-                    fatigue == null ? null : fatigue.intValue()  // int
+                    sleepFeeling,
+                    fatigueAvg.intValue()
             ));
         }
+
+        // 피크타임은 무조건 줘야 하므로 AI가 0~1개 데이터에서 터지지 않도록 최소 2개 보강
+        // TODO: 추후 AI가 결측/빈 데이터 방어를 구현하면, 이 보강 로직 제거하고 폴백 정책으로 전환.
+        ensureAtLeastTwoRecords(recent, baseDate);
 
         PeakTimePredictRequest.UserProfile profile =
                 new PeakTimePredictRequest.UserProfile(
                         mapChronotype(initial.getChronotype()),
                         mapSensitivity(initial.getCaffeineResponsiveness()),
                         mapSensitivity(initial.getNoiseSensitivity()),
-                        0.0  // optimal_hours는 float 필수
+                        0.0
                 );
 
         return new PeakTimePredictRequest(
@@ -84,6 +96,35 @@ public class PeakTimePredictRequestProviderImpl implements PeakTimePredictReques
                 profile,
                 recent
         );
+    }
+
+    private void ensureAtLeastTwoRecords(List<PeakTimePredictRequest.RecentRecord> recent, LocalDate baseDate) {
+        if (recent.size() >= 2) return;
+
+        if (recent.isEmpty()) {
+            recent.add(new PeakTimePredictRequest.RecentRecord(
+                    baseDate.minusDays(1).toString(),
+                    DEFAULT_SLEEP_FEELING,
+                    DEFAULT_FATIGUE_LEVEL
+            ));
+            recent.add(new PeakTimePredictRequest.RecentRecord(
+                    baseDate.toString(),
+                    DEFAULT_SLEEP_FEELING,
+                    DEFAULT_FATIGUE_LEVEL
+            ));
+            return;
+        }
+
+        PeakTimePredictRequest.RecentRecord only = recent.get(0);
+
+        Double sleepFeeling = only.sleep_feeling();
+        Integer fatigueLevel = only.fatigue_level();
+
+        recent.add(0, new PeakTimePredictRequest.RecentRecord(
+                baseDate.minusDays(1).toString(),
+                sleepFeeling,
+                fatigueLevel
+        ));
     }
 
     private String mapChronotype(Chronotype c) {

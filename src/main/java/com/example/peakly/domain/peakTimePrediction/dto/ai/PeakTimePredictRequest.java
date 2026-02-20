@@ -15,7 +15,6 @@ public record PeakTimePredictRequest(
             @JsonProperty("noise_senserance_prior") String noiseSenserancePrior,
             @JsonProperty("optimal_hours") Double optimalHours
     ) {}
-
     public record RecentRecord(
             String date,          // YYYY-MM-DD
             Double sleep_feeling,

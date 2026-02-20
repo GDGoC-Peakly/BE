@@ -1,5 +1,6 @@
 package com.example.peakly.domain.peakTimePrediction.controller;
 
+import com.example.peakly.domain.peakTimePrediction.dto.response.PeakTimePredictionRefreshResponse;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
 import com.example.peakly.domain.peakTimePrediction.service.PeakTimePredictionEnsureService;
 import com.example.peakly.domain.peakTimePrediction.util.DailyQueryParser;
@@ -21,13 +22,14 @@ public class PeakTimePredictionController {
     private final PeakTimePredictionEnsureService ensureService;
 
     @PostMapping("/peaktime/refresh")
-    public ApiResponse<PeakTimePrediction> refresh(
+    public ApiResponse<PeakTimePredictionRefreshResponse> refresh(
             @RequestParam(value = "baseDate", required = false) String baseDateStr
     ) {
         Long userId = SecurityUtil.requireUserId();
         LocalDate baseDate = DailyQueryParser.parseBaseDateOrToday(baseDateStr);
 
-        ensureService.refresh(userId, baseDate);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(
+                ensureService.refreshResponse(userId, baseDate)
+        );
     }
 }
