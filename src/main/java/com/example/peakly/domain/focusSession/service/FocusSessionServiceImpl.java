@@ -87,7 +87,8 @@ public class FocusSessionServiceImpl implements FocusSessionService {
         LocalDateTime startedAt = LocalDateTime.now();
         LocalDate baseDate = calcBaseDate(startedAt);
 
-        boolean hasCheckin = dailySleepLogRepository.existsByUser_IdAndBaseDate(userId, baseDate);
+        boolean hasCheckin = dailySleepLogRepository.existsByUser_IdAndBaseDate(userId, baseDate)
+                || dailySleepLogRepository.existsByUser_IdAndBaseDate(userId, baseDate.plusDays(1));;
         if (!hasCheckin) {
             throw new GeneralException(FocusSessionErrorStatus.DAILY_CHECKIN_REQUIRED);
         }
