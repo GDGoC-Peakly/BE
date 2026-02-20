@@ -5,6 +5,8 @@ import com.example.peakly.domain.focusSession.dto.request.FocusSessionStartReque
 import com.example.peakly.domain.focusSession.dto.response.*;
 import com.example.peakly.domain.focusSession.service.FocusSessionResultService;
 import com.example.peakly.domain.focusSession.service.FocusSessionService;
+import com.example.peakly.domain.peakTimePrediction.dto.response.SessionPeakTimeOverlapsResponse;
+import com.example.peakly.domain.peakTimePrediction.service.SessionPeakTimeOverlapsService;
 import com.example.peakly.global.apiPayload.ApiResponse;
 import com.example.peakly.global.security.SecurityUtil;
 import jakarta.validation.Valid;
@@ -18,6 +20,7 @@ public class FocusSessionController {
 
     private final FocusSessionService focusSessionService;
     private final FocusSessionResultService focusSessionResultService;
+    private final SessionPeakTimeOverlapsService sessionPeakTimeOverlapsService;
 
     @PostMapping("/start")
     public ApiResponse<FocusSessionStartResponse> start(
@@ -57,5 +60,13 @@ public class FocusSessionController {
             @PathVariable("sessionId") Long sessionId) {
         Long userId = SecurityUtil.requireUserId();
         return ApiResponse.onSuccess(focusSessionResultService.getResult(userId, sessionId));
+    }
+
+    @GetMapping("/{sessionId}/peaktime-overlaps")
+    public ApiResponse<SessionPeakTimeOverlapsResponse> getPeakTimeOverlaps(
+            @PathVariable("sessionId") Long sessionId
+    ) {
+        Long userId = SecurityUtil.requireUserId();
+        return ApiResponse.onSuccess(sessionPeakTimeOverlapsService.getSessionPeakTimeOverlaps(userId, sessionId));
     }
 }

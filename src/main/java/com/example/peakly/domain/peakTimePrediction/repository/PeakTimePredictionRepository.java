@@ -11,5 +11,8 @@ public interface PeakTimePredictionRepository extends JpaRepository<PeakTimePred
     //Optional<PeakTimePrediction> findTopByUserIdOrderByBaseDateDesc(Long userId);
 
     Optional<PeakTimePrediction> findTopByUserIdAndBaseDateLessThanEqualOrderByBaseDateDesc(Long userId, LocalDate baseDate);
+
+    Optional<PeakTimePrediction> findByUser_IdAndBaseDate(Long userId, LocalDate baseDate);
+
 }
 
