@@ -3,17 +3,14 @@ package com.example.peakly.domain.report.service.daily;
 import com.example.peakly.domain.focusSession.entity.FocusSession;
 import com.example.peakly.domain.focusSession.entity.SessionStatus;
 import com.example.peakly.domain.focusSession.repository.FocusSessionRepository;
-import com.example.peakly.domain.peakTimePrediction.dto.response.PeakTimeAiStoredJson;
-import com.example.peakly.domain.peakTimePrediction.dto.response.PeakWindowJson;
 import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePrediction;
+import com.example.peakly.domain.peakTimePrediction.entity.PeakTimePredictionWindow;
 import com.example.peakly.domain.peakTimePrediction.repository.PeakTimePredictionRepository;
 import com.example.peakly.domain.report.entity.DailyReport;
 import com.example.peakly.domain.report.enums.Insight;
 import com.example.peakly.domain.report.repository.DailyReportDetailRepository;
 import com.example.peakly.domain.report.util.FocusSessionSlotCalculator;
 import com.example.peakly.domain.user.entity.User;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +32,6 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
     private final FocusSessionRepository focusSessionRepository;
     private final PeakTimePredictionRepository peakTimePredictionRepository;
     private final FocusSessionSlotCalculator slotCalculator;
-    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -50,7 +46,7 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
         if (counted.isEmpty()) return;
 
-        int totalFocusSec  = counted.stream().mapToInt(FocusSession::getTotalFocusSec).sum();
+        int totalFocusSec = counted.stream().mapToInt(FocusSession::getTotalFocusSec).sum();
         int totalTargetSec = counted.stream().mapToInt(FocusSession::getGoalDurationSec).sum();
 
         double achievementRate = totalTargetSec > 0
@@ -78,10 +74,9 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
             if (prediction == null) return 0.0;
 
-            // TODO: 엔티티에 맞춰 수정
-            List<PeakWindowJson> windows = null;
-//            List<PeakWindowJson> windows = parseWindows(prediction.getWindowJson());
-//            if (windows.isEmpty()) return 0.0;
+            // ✅ JSON 대신 windows 테이블(1:N) 사용
+            List<PeakTimePredictionWindow> windows = prediction.getWindows();
+            if (windows == null || windows.isEmpty()) return 0.0;
 
             List<FocusSessionSlotCalculator.DateTimeRange> peakRanges = toPeakRanges(baseDate, windows);
             if (peakRanges.isEmpty()) return 0.0;
@@ -99,30 +94,31 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
         }
     }
 
-    private List<PeakWindowJson> parseWindows(String windowJson) throws Exception {
-        String trimmed = windowJson == null ? "" : windowJson.trim();
-        if (trimmed.isEmpty()) return List.of();
+    /**
+     * ✅ prediction_windows 엔티티(startMinuteOfDay, durationMinutes) → DateTimeRange 변환
+     * (겹치는 구간 merge 포함)
+     */
+    private List<FocusSessionSlotCalculator.DateTimeRange> toPeakRanges(
+            LocalDate baseDate,
+            List<PeakTimePredictionWindow> windows
+    ) {
+        if (windows == null || windows.isEmpty()) return List.of();
 
-        if (trimmed.startsWith("[")) {
-            return objectMapper.readValue(trimmed, new TypeReference<List<PeakWindowJson>>() {});
-        }
-
-        PeakTimeAiStoredJson wrapper = objectMapper.readValue(trimmed, PeakTimeAiStoredJson.class);
-        return wrapper.top_peak_times() == null ? List.of() : wrapper.top_peak_times();
-    }
-
-    private List<FocusSessionSlotCalculator.DateTimeRange> toPeakRanges(LocalDate baseDate, List<PeakWindowJson> windows) {
         List<FocusSessionSlotCalculator.DateTimeRange> ranges = new ArrayList<>();
 
-        for (PeakWindowJson w : windows) {
-            if (w == null || w.hour() == null || w.duration() == null) continue;
+        for (PeakTimePredictionWindow w : windows) {
+            if (w == null) continue;
 
-            LocalTime startT = toLocalTime(w.hour());
-            int durationMinutes = (int) Math.round(w.duration() * 60.0);
-            if (durationMinutes <= 0) continue;
+            int startMin = w.getStartMinuteOfDay();
+            int durationMin = w.getDurationMinutes();
 
+            if (startMin < 0 || startMin > 1439) continue;
+            if (durationMin <= 0) continue;
+
+            LocalTime startT = LocalTime.of(startMin / 60, startMin % 60);
             LocalDateTime start = baseDate.atTime(startT);
-            LocalDateTime end = start.plusMinutes(durationMinutes);
+            LocalDateTime end = start.plusMinutes(durationMin);
+
             ranges.add(new FocusSessionSlotCalculator.DateTimeRange(start, end));
         }
 
@@ -147,11 +143,5 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
         merged.add(cur);
 
         return merged;
-    }
-
-    private LocalTime toLocalTime(Double hour) {
-        int h = hour.intValue();
-        int m = (Math.abs(hour - h) < 1e-9) ? 0 : 30;
-        return LocalTime.of(h, m);
     }
 }
