@@ -74,7 +74,6 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
 
             if (prediction == null) return 0.0;
 
-            // ✅ JSON 대신 windows 테이블(1:N) 사용
             List<PeakTimePredictionWindow> windows = prediction.getWindows();
             if (windows == null || windows.isEmpty()) return 0.0;
 
@@ -94,10 +93,6 @@ public class DailyReportUpdateServiceImpl implements DailyReportUpdateService {
         }
     }
 
-    /**
-     * ✅ prediction_windows 엔티티(startMinuteOfDay, durationMinutes) → DateTimeRange 변환
-     * (겹치는 구간 merge 포함)
-     */
     private List<FocusSessionSlotCalculator.DateTimeRange> toPeakRanges(
             LocalDate baseDate,
             List<PeakTimePredictionWindow> windows

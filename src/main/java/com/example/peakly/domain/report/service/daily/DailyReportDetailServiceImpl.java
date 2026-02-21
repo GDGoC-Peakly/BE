@@ -45,7 +45,6 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
                 .findTopByUserIdAndBaseDateLessThanEqualOrderByBaseDateDesc(userId, slotDate)
                 .orElseThrow(() -> new GeneralException(PeakTimePredictionErrorStatus.PEAKTIME_PREDICTION_NOT_FOUND));
 
-        // slotDate의 focus session 조회(ENDED만)
         List<FocusSession> slotSessions = focusSessionRepository
                 .findByUser_IdAndBaseDateAndSessionStatus(userId, slotDate, SessionStatus.ENDED);
 
@@ -54,18 +53,17 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
                 .filter(FocusSession::isCountedInStats)
                 .toList();
 
-        // ✅ JSON 대신 windows 테이블(1:N) 사용
         List<PeakTimePredictionWindow> windows = prediction.getWindows();
         List<FocusSessionSlotCalculator.DateTimeRange> peakRanges = toPeakRanges(slotDate, windows);
 
-        // 세션이 실제로 존재한 시간대(슬롯 경계로 확장) ranges
+        // 세션이 실제로 존재한 시간대
         List<FocusSessionSlotCalculator.DateTimeRange> sessionRanges = extractSessionRanges(counted);
 
         // 피크타임 슬롯
         Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> peakMap = new LinkedHashMap<>();
         putSlots(peakMap, peakRanges, counted, true);
 
-        // 비피크타임 슬롯 (세션이 있었던 구간에서, 피크타임 슬롯 제외)
+        // 비피크타임 슬롯
         Map<LocalTime, DailyReportDetailResponse.TimeSlotDto> nonPeakMap = new LinkedHashMap<>();
         putSlotsExcludeKeys(nonPeakMap, sessionRanges, counted, peakMap.keySet());
 
@@ -149,9 +147,7 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
         }
     }
 
-    /**
-     * ✅ prediction_windows 엔티티(startMinuteOfDay, durationMinutes) → DateTimeRange 변환
-     */
+
     private List<FocusSessionSlotCalculator.DateTimeRange> toPeakRanges(
             LocalDate slotDate,
             List<PeakTimePredictionWindow> windows
@@ -180,7 +176,6 @@ public class DailyReportDetailServiceImpl implements DailyReportDetailService {
 
         ranges.sort(Comparator.comparing(FocusSessionSlotCalculator.DateTimeRange::start));
 
-        // 겹치는 구간 merge
         List<FocusSessionSlotCalculator.DateTimeRange> merged = new ArrayList<>();
         FocusSessionSlotCalculator.DateTimeRange cur = ranges.get(0);
 
